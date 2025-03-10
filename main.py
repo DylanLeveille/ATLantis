@@ -4,9 +4,12 @@
 import re
 import shutil
 import subprocess
+import datetime
+import sys
 
 from pathlib import Path
 from itertools import chain, combinations, product
+from networkx.drawing.nx_agraph import read_dot
 #################################
 ##         End Imports         ##
 #################################
@@ -27,6 +30,9 @@ binFolder = "bin"
 
 #MCMAS input file name
 mcmasInputFile = "input.ispl"
+
+#MCMAS output file name
+mcmasOutputFile = "formula1.dot"
 
 #MCMAS uniform and non-uniform strategy commands
 uniformStrategyCommand = ["../mcmas/mcmas-linux64-1.3.0", "-c", "3", "-uniform", mcmasInputFile ]
@@ -90,7 +96,8 @@ def setInitialState( possibleValue, knownVars, unknownVars, varsAndValues, mcmas
 
         initialState += " and "
 
-    initialState = initialState.strip().rsplit(" ", 1)[0].strip() #fix me
+    initialState = initialState.strip().rsplit(" ", 1)[0].strip() 
+    initialState += " and (player1.play=false) and (player2.play=false)" #FIXME: REMOVE! Get from initial state
     initialState += ";"
 
     #replace with initial state computed
@@ -128,6 +135,46 @@ def writeMCMASFile(binFolderPath, mcmasCopy):
     filePath = binFolderPath / mcmasInputFile
     filePath.write_text(mcmasCopy)
 
+def parseDOTFile( binFolderPath ):
+    #Parse the DOT file into a graph
+    DOTFilePath = binFolderPath / mcmasOutputFile
+    graph = read_dot( DOTFilePath )
+
+    #Extract a source node (a node with no incoming transition)
+    #In uniform strategies, there will be more than one source node
+    #We can take any as the strategy is unoform in this case
+    srcNode = None
+    for node in graph.nodes():
+        if ( graph.in_degree(node) == 0 ):
+            srcNode = node
+            break
+    
+    actions = list()
+    currNode = srcNode
+
+    nextNodeIsCurrent = False
+    #While currNode has a neighbour
+    while( graph.out_degree(currNode) > 0 and not nextNodeIsCurrent ):
+        neighbor = list(graph.neighbors(currNode))[0] #Get a neighbor
+        print(neighbor)
+        print(currNode)
+
+        if neighbor == currNode:
+            nextNodeIsCurrent = True
+            print("loop stop")
+        else:
+            #Action label will conatin actions for all agents
+            actionLabel = graph[currNode][neighbor].get(0).get('label')
+            print(actionLabel)
+
+            #FIXME: We assume agent for which goals must be found is first agent
+            action = actionLabel.split(";")[1].strip()
+            actions.append(action)
+
+            currNode = neighbor
+
+    return actions
+
 def findStrategy( mcmasCopy ):
     #Setup before running MCMAS
     binFolderPath = createBinFolder()
@@ -136,18 +183,64 @@ def findStrategy( mcmasCopy ):
     #Run MCMAS for uniform strategy
     terminalResult = subprocess.run(uniformStrategyCommand, cwd=binFolderPath, capture_output=True, text=True)
 
+    startegyExists = False
+    print("Trying uniform startegy...")
+    print(nonUniformStrategyCommand)
+    print(terminalResult.stdout)
     if "TRUE in the model" in terminalResult.stdout: #Uniform strategy exists!
         print("Uniform!")
+        startegyExists = True
     else: 
+        print("No Uniform strategy...")
+        print(nonUniformStrategyCommand)
         #Run MCMAS for non-uniform strategy
         terminalResult = subprocess.run(nonUniformStrategyCommand, cwd=binFolderPath, capture_output=True, text=True)
-
+        print(terminalResult.stdout)
         if "TRUE in the model" in terminalResult.stdout: #Non-uniform strategy exists!
             print("Non-Uniform!")
+            startegyExists = True
         else:
-            print("No Strategy!")
+            print("No Strategy!") #Hence, you probably want to avoid that goal with these pre-conditions
 
-    return None
+    #If we have a strategy, parse the dot file
+    if startegyExists:
+        actionsPlan = parseDOTFile( binFolderPath )
+    else:
+        actionsPlan = list()
+
+    print(actionsPlan)
+
+    return actionsPlan
+
+def writeJasonPlan( strategyActions, goal, knownVars, possibleValue, agentName ):
+    #currTime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+    jasonFileName = agentName + ".as"
+
+    with open(jasonFileName, "a") as jasonFile:
+        jasonFile.write("Goal: " + goal + "\n")
+        jasonFile.write("Precondition: \n")
+        jasonFile.write("Known Vars: ")
+
+        for var in knownVars:
+            jasonFile.write(var)
+            jasonFile.write(",")
+        jasonFile.write("\n")
+
+        jasonFile.write("Values of known vars: ")
+        for i in range( len(knownVars) ):
+            jasonFile.write(knownVars[i] + "=" + possibleValue[i])
+            jasonFile.write(",")
+        jasonFile.write("\n")
+
+        jasonFile.write("Postcondition: \n")
+        jasonFile.write("ActionsToTake:")
+        for action in strategyActions:
+            jasonFile.write(action)
+            jasonFile.write(",")
+        
+        jasonFile.write("\n\n\n")
+
 
 def parseMCMASFile(mcmasRaw):
     varsAndValues = dict()
@@ -225,34 +318,41 @@ def generatePlans(varsAndValues, agents, goals, mcmasRaw):
                 
                 mcmasCopy = setLobsvarForAgent( agents[i], agentVariables, mcmasCopy )
 
-                knownVars = set(agentVariablePermutations[0]) 
-                unknownVars = vars - knownVars
-                
-                #fix order of known vars for possible associated values
-                knownVars = list(knownVars)
-                unknownVars = list(unknownVars)
-                possibleValuesElements = list()
-                
-                for var in knownVars:
-                    possibleValuesElements.append( varsAndValues[var] )
-                
-                possibleValues = list( product(*possibleValuesElements) )
+            knownVars = set(agentVariablePermutations[0]) 
+            unknownVars = vars - knownVars
+            
+            #fix order of known vars for possible associated values
+            knownVars = list(knownVars)
+            unknownVars = list(unknownVars)
+            possibleValuesElements = list()
+            
+            for var in knownVars:
+                possibleValuesElements.append( varsAndValues[var] )
+            
+            possibleValues = list( product(*possibleValuesElements) )
 
-                for possibleValue in possibleValues:
-                    
-                    mcmasCopy = setInitialState( possibleValue, knownVars, unknownVars, varsAndValues, mcmasCopy)
-                    mcmasCopy = setGoal( goal, mcmasCopy)
+            for possibleValue in possibleValues:
+                #Set values in MCMAS file
+                mcmasCopy = setInitialState( possibleValue, knownVars, unknownVars, varsAndValues, mcmasCopy)
+                mcmasCopy = setGoal( goal, mcmasCopy)
 
-                    plans.append( findStrategy( mcmasCopy ) )
-                
-            break # to remove
+                #Find Strategies
+                strategyActions = findStrategy( mcmasCopy )
 
-        break # to remove
+                #Write Jason Plan
+                #FIXME: We assume agent for which goals must be found is first agent
+                writeJasonPlan( strategyActions, goal, knownVars, possibleValue, agents[0] )
+            
+            #break # to remove
+
+        #break # to remove
 
     return None
 
 def main():
-    # We assume agent for which goals must be found is first agent
+    #FIXME: We assume agent for which goals must be found is first agent
+    #FIXME: Change input ispl for user-specified
+    #FIXME: Specify next goal for the agent for each goal
     mcmasFile = open("examples/simple_card_game.ispl", "r", encoding="utf-8")
     mcmasRaw = mcmasFile.read()
     mcmasFile.close()
