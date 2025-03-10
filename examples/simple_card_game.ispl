@@ -31,7 +31,7 @@ Agent  player1
 end Agent
 
 Agent  player2
-	Lobsvars={};
+    Lobsvars={};
     Vars:
         play : boolean;
     end Vars

@@ -2,6 +2,10 @@
 ##        Begin Imports        ##
 #################################
 import re
+import shutil
+import subprocess
+
+from pathlib import Path
 from itertools import chain, combinations, product
 #################################
 ##         End Imports         ##
@@ -17,6 +21,16 @@ varAndValuesPattern = r"\s+(\w+)\s*:\s*(\{[^}]+\});"
 
 #Goals
 goalsPattern = r"^Formulae\s*\n([\s\S]*?)^end Formulae"
+
+#bin folder path
+binFolder = "bin"
+
+#MCMAS input file name
+mcmasInputFile = "input.ispl"
+
+#MCMAS uniform and non-uniform strategy commands
+uniformStrategyCommand = ["../mcmas/mcmas-linux64-1.3.0", "-c", "3", "-uniform", mcmasInputFile ]
+nonUniformStrategyCommand = ["../mcmas/mcmas-linux64-1.3.0", "-c", "3", mcmasInputFile ]
 
 #################################
 ##         End Globals         ##
@@ -58,7 +72,7 @@ def setLobsvarForAgent( agent, agentVariables, mcmasCopy ):
 def setInitialState( possibleValue, knownVars, unknownVars, varsAndValues, mcmasCopy ):
     initialState = ""
     for i in range( len(knownVars) ):
-        initialState += "( " + knownVars[i] + "=" + possibleValue[i] + " )"
+        initialState += "( Environment." + knownVars[i] + "=" + possibleValue[i] + " )"
         initialState += " and "
 
     for i in range( len(unknownVars) ):
@@ -67,7 +81,7 @@ def setInitialState( possibleValue, knownVars, unknownVars, varsAndValues, mcmas
 
         valuesForUnknownVar = varsAndValues[unknownVar]
         for j in range( len(valuesForUnknownVar) ):
-            initialState+= unknownVar + "=" + valuesForUnknownVar[j]
+            initialState+= "Environment." + unknownVar + "=" + valuesForUnknownVar[j]
 
             if j != ( len(valuesForUnknownVar) - 1 ):
                 initialState += " or "
@@ -95,7 +109,44 @@ def setGoal( goal, mcmasCopy):
 
     return mcmasNew
 
+def createBinFolder():
+    #Create the bin folder to store MCMAS results
+    currFolderPath = Path(".")
+    binFolderPath = currFolderPath / binFolder
+
+    #Wipe out folder if it already exists
+    if binFolderPath.exists():
+        shutil.rmtree(binFolderPath)
+
+    #create new bin path
+    binFolderPath.mkdir()
+
+    return binFolderPath
+
+def writeMCMASFile(binFolderPath, mcmasCopy):
+    #Write the MCMAS file
+    filePath = binFolderPath / mcmasInputFile
+    filePath.write_text(mcmasCopy)
+
 def findStrategy( mcmasCopy ):
+    #Setup before running MCMAS
+    binFolderPath = createBinFolder()
+    writeMCMASFile(binFolderPath, mcmasCopy)
+
+    #Run MCMAS for uniform strategy
+    terminalResult = subprocess.run(uniformStrategyCommand, cwd=binFolderPath, capture_output=True, text=True)
+
+    if "TRUE in the model" in terminalResult.stdout: #Uniform strategy exists!
+        print("Uniform!")
+    else: 
+        #Run MCMAS for non-uniform strategy
+        terminalResult = subprocess.run(nonUniformStrategyCommand, cwd=binFolderPath, capture_output=True, text=True)
+
+        if "TRUE in the model" in terminalResult.stdout: #Non-uniform strategy exists!
+            print("Non-Uniform!")
+        else:
+            print("No Strategy!")
+
     return None
 
 def parseMCMASFile(mcmasRaw):
