@@ -37,21 +37,34 @@ def powerset(iterable):
 
 def setLobsvarForAgent( agent, agentVariables, mcmasCopy ):
     specialPrint(agent)
-    # Define the new Lobsvars values for player1
-    new_lobsvars = "{card1=a, card2=k}" #account for spaces after Agent keyword
+    specialPrint(agentVariables)
+    lobsvars = "{" 
 
-    # Regular expression to match the Lobsvars block for player1 and replace it
-    pattern = r"(Agent player1\s+Lobsvars=)\{.*?\};"
-    pattern = rf"(Agent {re.escape(agent)}\s+Lobsvars=)\{{.*?\}};"
-    replacement = r"\1" + new_lobsvars + ";"
+    for var in agentVariables:
+        lobsvars += ( var + "," )
 
-    # Perform the replacement
-    modified_data = re.sub(pattern, replacement, mcmasCopy, flags=re.DOTALL)
+    if ( len( agentVariables ) > 0 ):
+        lobsvars = lobsvars[:-1]
 
-    return modified_data
+    lobsvars += "}"
 
-    # Print the modified data
-    #print(modified_data)
+    #Pattern to replace Lobsvar with
+    pattern = rf"(Agent\s+{re.escape(agent)}\s+Lobsvars=)\{{.*?\}};"
+    replacement = r"\1" + lobsvars + ";"
+
+    #Replace Lobsvar for the agent
+    mcmasNew = re.sub(pattern, replacement, mcmasCopy, flags=re.DOTALL)
+
+    return mcmasNew
+
+def setInitialState( possibleValue, knownVars, unknownVars ):
+    print("unknown vars")
+    print(unknownVars)
+    print("known vars")
+    print(knownVars)
+    print("possibleValue")
+    print(possibleValue)
+    return None
 
 def parseMCMASFile(mcmasRaw):
     varsAndValues = dict()
@@ -69,7 +82,23 @@ def parseMCMASFile(mcmasRaw):
         match = re.findall(varAndValuesPattern, varsSection)
 
         for var, value in match:
-            varsAndValues[var.strip()] = value.strip()
+            actualValues = list()
+            #value is a set of values
+            if "{" in value:
+                value = value.replace("{", "").replace("}", "")
+                for element in value.split(","):
+                    actualValues.append(element.strip())
+
+            elif "boolean" in value:
+                actualValues.append("true")
+                actualValues.append("false")
+            
+            else: #has form x..y (i.e., integers x to y inclusive)
+                integersString = re.findall(r'\d+', value)
+                integers = list(map(int, integersString))
+                actualValues = list(range( integers[0], integers[1] ))
+
+            varsAndValues[var.strip()] = actualValues
     
     #Extract all Agents, except environement
     for line in mcmasRaw.splitlines():
@@ -101,8 +130,6 @@ def generatePlans(varsAndValues, agents, goals, mcmasRaw):
     numAgents = len(agents)
     vars = set(varsAndValues.keys())
     
-
-
     powersetVars = powerset(vars)
     allAgentVariablePermutations = set(product(powersetVars, repeat=numAgents))
 
@@ -114,7 +141,23 @@ def generatePlans(varsAndValues, agents, goals, mcmasRaw):
                 agentVariables = agentVariablePermutations[i]
                 
                 mcmasCopy = setLobsvarForAgent( agents[i], agentVariables, mcmasCopy )
-                print(mcmasCopy)
+
+                knownVars = set(agentVariablePermutations[0]) 
+                unknownVars = vars - knownVars
+                
+                #fix order of known vars for possible associated values
+                knownVars = list(knownVars)
+                possibleValuesElements = list()
+                
+                for var in knownVars:
+                    possibleValuesElements.append( varsAndValues[var] )
+                
+                possibleValues = list( product(*possibleValuesElements) )
+
+                for possibleValue in possibleValues:
+                    
+                    mcmasCopy = setInitialState( possibleValue, knownVars, unknownVars )
+
                 
             break # to remove
 

@@ -15,7 +15,7 @@ Agent Environment
     end Evolution
 end Agent
 
-Agent player1
+Agent  player1
     Lobsvars={};
     Vars:
     	play : boolean;
@@ -30,7 +30,7 @@ Agent player1
     end Evolution
 end Agent
 
-Agent player2
+Agent  player2
 	Lobsvars={};
     Vars:
         play : boolean;
