@@ -353,6 +353,8 @@ def main():
     #FIXME: We assume agent for which goals must be found is first agent
     #FIXME: Change input ispl for user-specified
     #FIXME: Specify next goal for the agent for each goal
+    #FIXME: Unknown vars combination (for DEL)
+    #FIXME: combinations of known vars seems of of order (card2,card1) shows twice, no (card1,card2)
     mcmasFile = open("examples/simple_card_game.ispl", "r", encoding="utf-8")
     mcmasRaw = mcmasFile.read()
     mcmasFile.close()
