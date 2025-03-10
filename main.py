@@ -36,8 +36,6 @@ def powerset(iterable):
     return set(chain.from_iterable(combinations(s, r) for r in range(len(s)+1)))
 
 def setLobsvarForAgent( agent, agentVariables, mcmasCopy ):
-    specialPrint(agent)
-    specialPrint(agentVariables)
     lobsvars = "{" 
 
     for var in agentVariables:
@@ -57,13 +55,47 @@ def setLobsvarForAgent( agent, agentVariables, mcmasCopy ):
 
     return mcmasNew
 
-def setInitialState( possibleValue, knownVars, unknownVars ):
-    print("unknown vars")
-    print(unknownVars)
-    print("known vars")
-    print(knownVars)
-    print("possibleValue")
-    print(possibleValue)
+def setInitialState( possibleValue, knownVars, unknownVars, varsAndValues, mcmasCopy ):
+    initialState = ""
+    for i in range( len(knownVars) ):
+        initialState += "( " + knownVars[i] + "=" + possibleValue[i] + " )"
+        initialState += " and "
+
+    for i in range( len(unknownVars) ):
+        initialState += "( " 
+        unknownVar = unknownVars[i]
+
+        valuesForUnknownVar = varsAndValues[unknownVar]
+        for j in range( len(valuesForUnknownVar) ):
+            initialState+= unknownVar + "=" + valuesForUnknownVar[j]
+
+            if j != ( len(valuesForUnknownVar) - 1 ):
+                initialState += " or "
+
+        initialState += ") "
+
+        initialState += " and "
+
+    initialState = initialState.strip().rsplit(" ", 1)[0].strip() #fix me
+    initialState += ";"
+
+    #replace with initial state computed
+    pattern = r"InitStates.*?end InitStates"
+    replacement = "InitStates\n\n\t" + initialState + "\n\nend InitStates"
+
+    mcmasNew = re.sub(pattern, replacement, mcmasCopy, flags=re.DOTALL)
+
+    return mcmasNew
+
+def setGoal( goal, mcmasCopy):
+    pattern = r"Formulae.*?end Formulae"
+    replacement = "Formulae\n\n\t" + goal + "\n\nend Formulae"
+
+    mcmasNew = re.sub(pattern, replacement, mcmasCopy, flags=re.DOTALL)
+
+    return mcmasNew
+
+def findStrategy( mcmasCopy ):
     return None
 
 def parseMCMASFile(mcmasRaw):
@@ -147,6 +179,7 @@ def generatePlans(varsAndValues, agents, goals, mcmasRaw):
                 
                 #fix order of known vars for possible associated values
                 knownVars = list(knownVars)
+                unknownVars = list(unknownVars)
                 possibleValuesElements = list()
                 
                 for var in knownVars:
@@ -156,8 +189,10 @@ def generatePlans(varsAndValues, agents, goals, mcmasRaw):
 
                 for possibleValue in possibleValues:
                     
-                    mcmasCopy = setInitialState( possibleValue, knownVars, unknownVars )
+                    mcmasCopy = setInitialState( possibleValue, knownVars, unknownVars, varsAndValues, mcmasCopy)
+                    mcmasCopy = setGoal( goal, mcmasCopy)
 
+                    plans.append( findStrategy( mcmasCopy ) )
                 
             break # to remove
 
