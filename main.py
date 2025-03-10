@@ -354,7 +354,7 @@ def main():
     #FIXME: Change input ispl for user-specified
     #FIXME: Specify next goal for the agent for each goal
     #FIXME: Unknown vars combination (for DEL)
-    #FIXME: combinations of known vars seems of of order (card2,card1) shows twice, no (card1,card2)
+    #FIXME: Forgot to show in plans which variables I know my opponents know
     mcmasFile = open("examples/simple_card_game.ispl", "r", encoding="utf-8")
     mcmasRaw = mcmasFile.read()
     mcmasFile.close()
