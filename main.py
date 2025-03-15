@@ -75,17 +75,17 @@ def setLobsvarForAgent( agent, agentVariables, mcmasCopy ):
 
     return mcmasNew
 
-def setInitialState( possibleValue, knownVars, unknownVars, varsAndValues, mcmasCopy ):
+def setInitialState( knownPossibleValue, knownVars, unknownPossibleValue, unknownVars, mcmasCopy):
     initialState = ""
     for i in range( len(knownVars) ):
-        initialState += "( Environment." + knownVars[i] + "=" + possibleValue[i] + " )"
+        initialState += "( Environment." + knownVars[i] + "=" + knownPossibleValue[i] + " )"
         initialState += " and "
 
     for i in range( len(unknownVars) ):
         initialState += "( " 
         unknownVar = unknownVars[i]
 
-        valuesForUnknownVar = varsAndValues[unknownVar]
+        valuesForUnknownVar = unknownPossibleValue[i]
         for j in range( len(valuesForUnknownVar) ):
             initialState+= "Environment." + unknownVar + "=" + valuesForUnknownVar[j]
 
@@ -212,34 +212,39 @@ def findStrategy( mcmasCopy ):
 
     return actionsPlan
 
-def writeJasonPlan( strategyActions, goal, knownVars, possibleValue, agentName ):
+def writeJasonPlan( strategyActions, goal, knownVars, knownPossibleValue, unknownVars, unknownPossibleValue, agentName ):
     #currTime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
     jasonFileName = agentName + ".as"
 
     with open(jasonFileName, "a") as jasonFile:
-        jasonFile.write("Goal: " + goal + "\n")
-        jasonFile.write("Precondition: \n")
-        jasonFile.write("Known Vars: ")
+        #Write goal
+        jasonFile.write("+!" + goal + ":")
 
-        for var in knownVars:
-            jasonFile.write(var)
-            jasonFile.write(",")
+        #Write pre-conditions
+        for  i in range( len(knownVars) ):
+            jasonFile.write("\n")
+            jasonFile.write("\t")
+            jasonFile.write(knownVars[i] + "=" + knownPossibleValue[i])
+
+        for  i in range( len(unknownVars) ):
+            for possValue in unknownPossibleValue[i]:
+                jasonFile.write("\n")
+                jasonFile.write("\t")
+                jasonFile.write("poss(" + unknownVars[i] + "=" + possValue + ")")
+
+        jasonFile.write("\n\t <-")
+
         jasonFile.write("\n")
-
-        jasonFile.write("Values of known vars: ")
-        for i in range( len(knownVars) ):
-            jasonFile.write(knownVars[i] + "=" + possibleValue[i])
-            jasonFile.write(",")
-        jasonFile.write("\n")
-
-        jasonFile.write("Postcondition: \n")
-        jasonFile.write("ActionsToTake:")
-        for action in strategyActions:
-            jasonFile.write(action)
-            jasonFile.write(",")
+        jasonFile.write("\t")
+        for i in range(len(strategyActions)):
+            jasonFile.write(strategyActions[i])
+            if ( len(strategyActions) ==  ( i - 1 ) ): #last action, put .
+                jasonFile.write(".")
+            else:
+                jasonFile.write(";")
         
-        jasonFile.write("\n\n\n")
+        jasonFile.write("\n\n")
 
 
 def parseMCMASFile(mcmasRaw):
@@ -304,45 +309,60 @@ def parseMCMASFile(mcmasRaw):
 def generatePlans(varsAndValues, agents, goals, mcmasRaw):
     plans = list()
     numAgents = len(agents)
+    numPermutations = 1 # Ideally, should be set to numAgents. But MCMAS, does not support knowledge based actions
     vars = set(varsAndValues.keys())
     
-    powersetVars = powerset(vars)
-    allAgentVariablePermutations = set(product(powersetVars, repeat=numAgents))
+    powersetVars = powerset(vars) # order biggest to smallest
+    allAgentVariablePermutations = set(product(powersetVars, repeat=numPermutations)) #order biggest to smallest
 
     for goal in goals:
         for agentVariablePermutations in allAgentVariablePermutations:
             mcmasCopy = str(mcmasRaw) #Make a copy of raw text (we modify this copy)
 
-            for i in range(numAgents):
+            for i in range(numPermutations): #FIXME: We assume agent for which goals must be found is first agent
                 agentVariables = agentVariablePermutations[i]
                 
                 mcmasCopy = setLobsvarForAgent( agents[i], agentVariables, mcmasCopy )
 
-            knownVars = set(agentVariablePermutations[0]) 
+            knownVars = set(agentVariablePermutations[0]) #FIXME: We assume agent for which goals must be found is first agent
             unknownVars = vars - knownVars
             
-            #fix order of known vars for possible associated values
+            # A known variable can only possess one possible value
+            # An unknown variable can posses any number of possible values 
             knownVars = list(knownVars)
             unknownVars = list(unknownVars)
-            possibleValuesElements = list()
+            knownPossibleValuesElements = list()
+            unknownPossibleValuesElements = list()
             
             for var in knownVars:
-                possibleValuesElements.append( varsAndValues[var] )
+                knownPossibleValuesElements.append( varsAndValues[var] )
+            for var in unknownVars:
+                poss = powerset( varsAndValues[var] ) #Careful, this includes empty set which is not true here
+                poss = [ s for s in poss if s ]
+                unknownPossibleValuesElements.append( poss ) 
             
-            possibleValues = list( product(*possibleValuesElements) )
+            knownPossibleValues = list( product(*knownPossibleValuesElements) ) #possible values for known variables
+            unknownPossibleValues = list( product(*unknownPossibleValuesElements) ) #possible values for unknown variables
 
-            for possibleValue in possibleValues:
-                #Set values in MCMAS file
-                mcmasCopy = setInitialState( possibleValue, knownVars, unknownVars, varsAndValues, mcmasCopy)
-                mcmasCopy = setGoal( goal, mcmasCopy)
+            for knownPossibleValue in knownPossibleValues: #Example: Card 1 = King
+                for unknownPossibleValue in unknownPossibleValues: #Example: poss(card2 = King) and poss(card2 = Queen)
+                    #Set values in MCMAS file
+                    mcmasCopy = setInitialState( knownPossibleValue, knownVars, unknownPossibleValue, unknownVars, mcmasCopy)
+                    mcmasCopy = setGoal( goal, mcmasCopy)
 
-                #Find Strategies
-                strategyActions = findStrategy( mcmasCopy )
+                    #Find Strategies
+                    strategyActions = findStrategy( mcmasCopy )
 
-                #Write Jason Plan
-                #FIXME: We assume agent for which goals must be found is first agent
-                writeJasonPlan( strategyActions, goal, knownVars, possibleValue, agents[0] )
-            
+                    #With goodie list, MCMAS can just do uniform start!
+
+                    #if complete certainty and strat, add to goodie list
+                    #if complete certainty and no strat, pick random action. Do not add to goodie list
+                    #if partial certainty and no strat, loop uncertainty with goodie list until strat. If loop finish, impossible to achieve goal. Set new goal
+
+                    #Write Jason Plan
+                    #FIXME: We assume agent for which goals must be found is first agent
+                    writeJasonPlan( strategyActions, goal, knownVars, knownPossibleValue, unknownVars, unknownPossibleValue, agents[0] )
+                
             #break # to remove
 
         #break # to remove
@@ -354,7 +374,6 @@ def main():
     #FIXME: Change input ispl for user-specified
     #FIXME: Specify next goal for the agent for each goal
     #FIXME: Unknown vars combination (for DEL)
-    #FIXME: Forgot to show in plans which variables I know my opponents know
     mcmasFile = open("examples/simple_card_game.ispl", "r", encoding="utf-8")
     mcmasRaw = mcmasFile.read()
     mcmasFile.close()
