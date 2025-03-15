@@ -46,14 +46,10 @@ nonUniformStrategyCommand = ["../mcmas/mcmas-linux64-1.3.0", "-c", "3", mcmasInp
 ##        Begin Functions      ##
 #################################
 
-def specialPrint(msg):
-    print("***************************************")
-    print(msg)
-    print("***************************************\n")
-
 def powerset(iterable):
     s = list(iterable)
-    return set(chain.from_iterable(combinations(s, r) for r in range(len(s)+1)))
+    result = list(chain.from_iterable(combinations(s, r) for r in range(len(s)+1)))
+    return sorted(result, key=len, reverse=True)
 
 def setLobsvarForAgent( agent, agentVariables, mcmasCopy ):
     lobsvars = "{" 
@@ -312,8 +308,8 @@ def generatePlans(varsAndValues, agents, goals, mcmasRaw):
     numPermutations = 1 # Ideally, should be set to numAgents. But MCMAS, does not support knowledge based actions
     vars = set(varsAndValues.keys())
     
-    powersetVars = powerset(vars) # order biggest to smallest
-    allAgentVariablePermutations = set(product(powersetVars, repeat=numPermutations)) #order biggest to smallest
+    powersetVars = powerset(vars) 
+    allAgentVariablePermutations = list(product(powersetVars, repeat=numPermutations)) 
 
     for goal in goals:
         for agentVariablePermutations in allAgentVariablePermutations:
@@ -353,11 +349,11 @@ def generatePlans(varsAndValues, agents, goals, mcmasRaw):
                     #Find Strategies
                     strategyActions = findStrategy( mcmasCopy )
 
-                    #With goodie list, MCMAS can just do uniform start!
+                    #With goodie list, MCMAS cannot just do uniform strat in case some varibales can never be known (agent 2 only can see it ever)
 
-                    #if complete certainty and strat, add to goodie list
-                    #if complete certainty and no strat, pick random action. Do not add to goodie list
-                    #if partial certainty and no strat, loop uncertainty with goodie list until strat. If loop finish, impossible to achieve goal. Set new goal
+                    #if complete certainty and goal true, add to goodie list (complete knwoledge strategies)
+                    #if complete certainty and goal false, pick random action. Do not add to goodie list
+                    #if partial certainty and goal false, loop uncertainty with goodie list until strat. If loop finish, impossible to achieve goal. Set new goal
 
                     #Write Jason Plan
                     #FIXME: We assume agent for which goals must be found is first agent
