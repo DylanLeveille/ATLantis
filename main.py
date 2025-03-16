@@ -22,6 +22,9 @@ from networkx.drawing.nx_agraph import read_dot
 environmentVarsPattern = r"Agent Environment[\s\S]*?Vars:\n([\s\S]*?)end Vars"
 varAndValuesPattern = r"\s+(\w+)\s*:\s*(\{[^}]+\});"
 
+#All Variables
+varsPattern = r"Vars:\n([\s\S]*?)end Vars"
+
 #Goals
 goalsPattern = r"^Formulae\s*\n([\s\S]*?)^end Formulae"
 
@@ -71,8 +74,8 @@ def setLobsvarForAgent( agent, agentVariables, mcmasCopy ):
 
     return mcmasNew
 
-def setInitialState( knownPossibleValue, knownVars, unknownPossibleValue, unknownVars, mcmasCopy):
-    initialState = ""
+def setInitialState( knownPossibleValue, knownVars, unknownPossibleValue, unknownVars, mcmasCopy, fixedInitialState ):
+    initialState = fixedInitialState + " "
     for i in range( len(knownVars) ):
         initialState += "( Environment." + knownVars[i] + "=" + knownPossibleValue[i] + " )"
         initialState += " and "
@@ -88,12 +91,11 @@ def setInitialState( knownPossibleValue, knownVars, unknownPossibleValue, unknow
             if j != ( len(valuesForUnknownVar) - 1 ):
                 initialState += " or "
 
-        initialState += ") "
+        initialState += ")"
 
         initialState += " and "
 
     initialState = initialState.strip().rsplit(" ", 1)[0].strip() 
-    initialState += " and (player1.play=false) and (player2.play=false)" #FIXME: REMOVE! Get from initial state
     initialState += ";"
 
     #replace with initial state computed
@@ -206,43 +208,71 @@ def findStrategy( mcmasCopy ):
 
     return startegyExists, actionsPlan
 
-def writeJasonPlan( strategyActions, goal, knownVars, knownPossibleValue, unknownVars, unknownPossibleValue, agentName ):
+def writeJasonPlan( strategyActions, goal, knownVars, knownPossibleValue, unknownVars, unknownPossibleValue, agentName):
     #currTime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
     jasonFileName = agentName + ".as"
 
     with open(jasonFileName, "a") as jasonFile:
         #Write goal
-        jasonFile.write("+!" + goal + ":")
+        jasonFile.write("+!" + goal[:-1] + ":")
 
         #Write pre-conditions
         for  i in range( len(knownVars) ):
             jasonFile.write("\n")
             jasonFile.write("\t")
             jasonFile.write(knownVars[i] + "=" + knownPossibleValue[i])
+            if ( len(unknownVars) > 0 or i < len(knownVars) - 1 ):
+                jasonFile.write(" &")
 
         for  i in range( len(unknownVars) ):
-            for possValue in unknownPossibleValue[i]:
+            for j in range( len(unknownPossibleValue[i]) ):
+                possValue = unknownPossibleValue[i][j]
                 jasonFile.write("\n")
                 jasonFile.write("\t")
                 jasonFile.write("poss(" + unknownVars[i] + "=" + possValue + ")")
+                if ( i < len(unknownVars) - 1  or j < len(unknownPossibleValue[i]) - 1 ):
+                    jasonFile.write(" &")
 
-        jasonFile.write("\n\t <-")
+        jasonFile.write("\n\t<-")
 
         jasonFile.write("\n")
         jasonFile.write("\t")
         for i in range(len(strategyActions)):
             jasonFile.write(strategyActions[i])
-            if ( len(strategyActions) ==  ( i - 1 ) ): #last action, put .
+            if ( len(strategyActions) - 1 ==  ( i - 1 ) ): #last action, put .
                 jasonFile.write(".")
             else:
                 jasonFile.write(";")
         
         jasonFile.write("\n\n")
 
+def setFixVariables(varsForAgent):
+    #Prompt user to fix values for agent variables. This will be used as part of initial state
+    print("*** Initial State Configuration ***")
+    print("*** Set Agent Variables ***")
+    fixedInitialState = ""
+    for agent in varsForAgent.keys():
+        if agent != "Environment":
+            for agentVar in varsForAgent[agent]:
+                value = input("Value for " + agent + "." + agentVar + " ?: ")
+                fixedInitialState += "(" + agent + "." + agentVar + "=" + value.strip() + ") and "
+    print("*** Set Environment Variables ***")     
+    shouldFixEnvVariables = input("Should any environment variables be statically set? (y/n): ")
+    fixedEnvVariables = list()
+    if ( shouldFixEnvVariables.strip() == "y" ):
+        fixEnvVariables = input("Which variables? (comma seperated): ")
+        for fixedVar in fixEnvVariables.split(","):
+            fixedVar = fixedVar.strip()
+            fixedEnvVariables.append(fixedVar)
+            value = input("Value for Environment." + fixedVar + " ?: ")
+            fixedInitialState += " (" + "Environement" + "." + fixedVar + "=" + value.strip() + ") and "
+
+    return fixedInitialState, fixedEnvVariables
 
 def parseMCMASFile(mcmasRaw):
     varsAndValues = dict()
+    varsForAgent = dict()
     agents = list()
     goals = list()
     
@@ -275,14 +305,32 @@ def parseMCMASFile(mcmasRaw):
 
             varsAndValues[var.strip()] = actualValues
     
-    #Extract all Agents, except environement
+    #Extract all Agents, except environement. And extract all Vars
+    varsSection = False
+    agentVariables = list()
+    mostRecentAgent = None
     for line in mcmasRaw.splitlines():
-        if line.startswith("Agent"):
+        if line.strip().startswith("Agent"):
             agent = line.split(" ", 1)[1].strip()
+            mostRecentAgent = agent
 
             if agent != "Environment":
                 agents.append(agent)
 
+        if line.strip().startswith("Vars"):
+            varsSection = True
+
+        elif varsSection:
+            line = line.strip()
+            if line: 
+                if line.split(" ")[0].startswith("end"):
+                    varsSection = False
+                    varsForAgent[mostRecentAgent] = agentVariables
+                    agentVariables = list()
+                else:
+                    var = line.split(":")[0].strip()
+                    agentVariables.append(var)
+            
     #Extract all Goals
     match = re.search(goalsPattern, mcmasRaw, re.MULTILINE)
 
@@ -295,12 +343,14 @@ def parseMCMASFile(mcmasRaw):
     print(varsAndValues)
     print("Agents Detected:")
     print(agents)
+    print("Variables for Agents")
+    print(varsForAgent)
     print("Goals Detected:")
     print(goals)
 
-    return varsAndValues, agents, goals
+    return varsAndValues, agents, varsForAgent, goals
 
-def generatePlans(varsAndValues, agents, goals, mcmasRaw):
+def generatePlans(varsAndValues, agents, goals, mcmasRaw, fixedInitialState):
     plans = list()
     idealPlans = dict()
     numAgents = len(agents)
@@ -345,7 +395,7 @@ def generatePlans(varsAndValues, agents, goals, mcmasRaw):
                     # We don't want to apply the algorithm when an unkown variable has only one possible value
                     if not any( len(possValues) == 1 for possValues in unknownPossibleValue ):
                         #Set values in MCMAS file
-                        mcmasCopy = setInitialState( knownPossibleValue, knownVars, unknownPossibleValue, unknownVars, mcmasCopy)
+                        mcmasCopy = setInitialState( knownPossibleValue, knownVars, unknownPossibleValue, unknownVars, mcmasCopy, fixedInitialState )
                         mcmasCopy = setGoal( goal, mcmasCopy)
 
                         #Find Strategies
@@ -401,15 +451,19 @@ def main():
     #FIXME: We assume agent for which goals must be found is first agent
     #FIXME: Change input ispl for user-specified
     #FIXME: Specify next goal for the agent for each goal
-    #FIXME: Extract agent's vars. Ask user for fixed init values for these. Ask user if any env variables should be fixed.
-    #FIXME: Fix output format
     mcmasFile = open("examples/simple_card_game.ispl", "r", encoding="utf-8")
     mcmasRaw = mcmasFile.read()
     mcmasFile.close()
 
-    varsAndValues, agents, goals = parseMCMASFile(mcmasRaw)
+    varsAndValues, agents, varsForAgent, goals = parseMCMASFile(mcmasRaw)
 
-    plans = generatePlans(varsAndValues, agents, goals, mcmasRaw)
+    fixedInitialState, fixedEnvVariables = setFixVariables(varsForAgent)
+
+    # Remove fixed environment variables from varsAndValues
+    for fixedEnvVariable in fixedEnvVariables:
+        varsAndValues.pop(fixedEnvVariable)
+
+    plans = generatePlans(varsAndValues, agents, goals, mcmasRaw, fixedInitialState)
 
 #################################
 ##         End Functions       ##
