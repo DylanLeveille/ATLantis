@@ -204,9 +204,7 @@ def findStrategy( mcmasCopy ):
     else:
         actionsPlan = list()
 
-    print(actionsPlan)
-
-    return actionsPlan
+    return startegyExists, actionsPlan
 
 def writeJasonPlan( strategyActions, goal, knownVars, knownPossibleValue, unknownVars, unknownPossibleValue, agentName ):
     #currTime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -304,9 +302,11 @@ def parseMCMASFile(mcmasRaw):
 
 def generatePlans(varsAndValues, agents, goals, mcmasRaw):
     plans = list()
+    idealPlans = dict()
     numAgents = len(agents)
     numPermutations = 1 # Ideally, should be set to numAgents. But MCMAS, does not support knowledge based actions
-    vars = set(varsAndValues.keys())
+    vars = list(varsAndValues.keys())
+    vars.sort()
     
     powersetVars = powerset(vars) 
     allAgentVariablePermutations = list(product(powersetVars, repeat=numPermutations)) 
@@ -320,13 +320,12 @@ def generatePlans(varsAndValues, agents, goals, mcmasRaw):
                 
                 mcmasCopy = setLobsvarForAgent( agents[i], agentVariables, mcmasCopy )
 
-            knownVars = set(agentVariablePermutations[0]) #FIXME: We assume agent for which goals must be found is first agent
-            unknownVars = vars - knownVars
+            knownVars = list(agentVariablePermutations[0]) #FIXME: We assume agent for which goals must be found is first agent
+            unknownVars = [var for var in vars if var not in knownVars]
+            completeCertainty = True if len(unknownVars) == 0 else False 
             
             # A known variable can only possess one possible value
             # An unknown variable can posses any number of possible values 
-            knownVars = list(knownVars)
-            unknownVars = list(unknownVars)
             knownPossibleValuesElements = list()
             unknownPossibleValuesElements = list()
             
@@ -336,28 +335,61 @@ def generatePlans(varsAndValues, agents, goals, mcmasRaw):
                 poss = powerset( varsAndValues[var] ) #Careful, this includes empty set which is not true here
                 poss = [ s for s in poss if s ]
                 unknownPossibleValuesElements.append( poss ) 
-            
+
             knownPossibleValues = list( product(*knownPossibleValuesElements) ) #possible values for known variables
             unknownPossibleValues = list( product(*unknownPossibleValuesElements) ) #possible values for unknown variables
 
-            for knownPossibleValue in knownPossibleValues: #Example: Card 1 = King
-                for unknownPossibleValue in unknownPossibleValues: #Example: poss(card2 = King) and poss(card2 = Queen)
-                    #Set values in MCMAS file
-                    mcmasCopy = setInitialState( knownPossibleValue, knownVars, unknownPossibleValue, unknownVars, mcmasCopy)
-                    mcmasCopy = setGoal( goal, mcmasCopy)
+            for knownPossibleValue in knownPossibleValues: #Example: Card 1 = King and Card 2 = Ace
+                for unknownPossibleValue in unknownPossibleValues: #Example: ( poss(Card3 = King) and poss(Card3 = Queen); poss(Card4, King) and poss(Card4, Queen) )
+                    
+                    # We don't want to apply the algorithm when an unkown variable has only one possible value
+                    if not any( len(possValues) == 1 for possValues in unknownPossibleValue ):
+                        #Set values in MCMAS file
+                        mcmasCopy = setInitialState( knownPossibleValue, knownVars, unknownPossibleValue, unknownVars, mcmasCopy)
+                        mcmasCopy = setGoal( goal, mcmasCopy)
 
-                    #Find Strategies
-                    strategyActions = findStrategy( mcmasCopy )
+                        #Find Strategies
+                        strategyExists, strategyActions = findStrategy( mcmasCopy )
 
-                    #With goodie list, MCMAS cannot just do uniform strat in case some varibales can never be known (agent 2 only can see it ever)
+                        #if complete certainty and goal true, add to idea plans list (complete knowledge strategies)
+                        if completeCertainty:
+                            if strategyExists:
+                                idealPlans[ tuple(knownPossibleValue) ] = strategyActions
+                            else:
+                                print("random action")
+                        #if partial certainty and goal false, loop uncertainty with goodie list until strat. 
+                        else:
+                            if not strategyExists:
+                                #Create all concrete permutations for the possible values of ecah variable
+                                permPossibleValues = list( product(*unknownPossibleValue) )
+                                
+                                #Loop through each possible concrete values for unknown variables. Fetch actions from ideal strategies
+                                for permPossibleValue in permPossibleValues:
+                                    #construct key for dictionary
+                                    dictKey = list()
+                                    knownVarIndex = 0
+                                    unknownVarIndex = 0
+                                    for var in vars: #vars is alphabetically ordered. Hence all other lists are as well
+                                        if var in knownVars:
+                                            dictKey.append(knownPossibleValue[knownVarIndex])
+                                            knownVarIndex += 1
+                                        else:
+                                            dictKey.append(permPossibleValue[unknownVarIndex])
+                                            unknownVarIndex += 1
 
-                    #if complete certainty and goal true, add to goodie list (complete knwoledge strategies)
-                    #if complete certainty and goal false, pick random action. Do not add to goodie list
-                    #if partial certainty and goal false, loop uncertainty with goodie list until strat. If loop finish, impossible to achieve goal. Set new goal
+                                    actualDictKey = tuple(dictKey)
+                                    if actualDictKey in idealPlans:
+                                        strategyActions = idealPlans[actualDictKey]
+                                        strategyExists = True
+                                        break #we found a plan, so stop
 
-                    #Write Jason Plan
-                    #FIXME: We assume agent for which goals must be found is first agent
-                    writeJasonPlan( strategyActions, goal, knownVars, knownPossibleValue, unknownVars, unknownPossibleValue, agents[0] )
+                        #if we could not find actions to do, means we cannot achieve this goal no matter what we do (no chance of getting goal)            
+                        if not strategyExists:
+                            print("out of luck")
+
+                        #Write Jason Plan
+                        #FIXME: We assume agent for which goals must be found is first agent
+                        writeJasonPlan( strategyActions, goal, knownVars, knownPossibleValue, unknownVars, unknownPossibleValue, agents[0] )
                 
             #break # to remove
 
@@ -369,7 +401,8 @@ def main():
     #FIXME: We assume agent for which goals must be found is first agent
     #FIXME: Change input ispl for user-specified
     #FIXME: Specify next goal for the agent for each goal
-    #FIXME: Unknown vars combination (for DEL)
+    #FIXME: Extract agent's vars. Ask user for fixed init values for these. Ask user if any env variables should be fixed.
+    #FIXME: Fix output format
     mcmasFile = open("examples/simple_card_game.ispl", "r", encoding="utf-8")
     mcmasRaw = mcmasFile.read()
     mcmasFile.close()
