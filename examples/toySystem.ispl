@@ -123,27 +123,22 @@ Agent Environment
 end Agent
 
 Agent BA
-    --Lobsvars={none};
+    Lobsvars={};
     Vars:
-	--step: 0..3;
 	mined: boolean;
-	--value: {none};
     end Vars
     Actions = {right, left, up, down, mine};
     Protocol:
     	Other : {right, left, up, down, mine};
     end Protocol
     Evolution:
-    	--step = step + 1 if value=none;
     	mined = true if BA.Action = mine;
     end Evolution
 end Agent
 
 Agent RA
-    --Lobsvars={none};
+    Lobsvars={};
     Vars:
-	--step: 0..3;
-	--value: {none};
 	mined: boolean;
     end Vars
     Actions = {right, left, up, down, mine};
@@ -151,7 +146,6 @@ Agent RA
     	Other : {right, left, up, down, mine};
     end Protocol
     Evolution:
-    	--step = step + 1 if value=none;
     	mined = true if RA.Action = mine;
     end Evolution
 end Agent
@@ -172,14 +166,11 @@ end InitStates
 
 Groups
 	g1 = {RA};
-	g2 = {BA};
 end Groups
 
 Fairness
 end Fairness
 
 Formulae
-	--<g2>X(pos2);
-	--<g2>X(<g2>((!pos1) U pos2));
 	<g1>  F(RATreasure and !(treasureTaken) and !RAMined and (<g1> X( RAMined and treasureTaken) ) );
 end Formulae
