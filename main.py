@@ -167,8 +167,7 @@ def parseDOTFile( binFolderPath, agentIndex ):
             actionLabel = graph[currNode][neighbor].get(0).get('label')
             print(actionLabel)
 
-            #FIXME: no We assume agent for which goals must be found is first agent
-            action = actionLabel.split(";")[agentIndex + 1].strip()
+            action = actionLabel.split(";").replace(">;", "")[agentIndex + 1].strip()
             actions.append(action)
 
             currNode = neighbor
@@ -224,7 +223,7 @@ def writeJasonPlan( strategyActions, goal, knownVars, knownPossibleValue, unknow
         for  i in range( len(knownVars) ):
             jasonFile.write("\n")
             jasonFile.write("\t")
-            jasonFile.write(knownVars[i] + "=" + knownPossibleValue[i])
+            jasonFile.write(knownVars[i].lower + "(" + knownPossibleValue[i] + ")")
             if ( len(unknownVars) > 0 or i < len(knownVars) - 1 ):
                 jasonFile.write(" &")
 
@@ -234,7 +233,9 @@ def writeJasonPlan( strategyActions, goal, knownVars, knownPossibleValue, unknow
                 jasonFile.write("\n")
                 jasonFile.write("\t")
                 jasonFile.write("poss(" + unknownVars[i] + "=" + possValue + ")")
-                if ( i < len(unknownVars) - 1  or j < len(unknownPossibleValue[i]) - 1 ):
+                if ( len(agentVariablePermutations) != 1 ):
+                    jasonFile.write(" &")
+                elif ( (i < len(unknownVars) - 1 or j < len(unknownPossibleValue[i]) - 1) ):
                     jasonFile.write(" &")
         
         # Include beliefs of variables that the agent believes other agents know / don't know
@@ -262,7 +263,7 @@ def writeJasonPlan( strategyActions, goal, knownVars, knownPossibleValue, unknow
                     otherAgentUnknownVar = otherAgentUnknownVars[j]
                     jasonFile.write("\n")
                     jasonFile.write("\t")
-                    jasonFile.write("not(K(" + otherAgentName + "," + otherAgentUnknownVar + "))")
+                    jasonFile.write("!K(" + otherAgentName + "," + otherAgentUnknownVar + ")")
                     if ( j < len(otherAgentUnknownVars) - 1 ):
                         jasonFile.write(" &")
 
@@ -278,6 +279,16 @@ def writeJasonPlan( strategyActions, goal, knownVars, knownPossibleValue, unknow
                 jasonFile.write(";")
         
         jasonFile.write("\n\n")
+
+def createJasonPlan(vars, agents, agentIndex):
+    agentName = agents[agentIndex]
+
+    jasonFileName = agentName + ".as"
+
+    with open(jasonFileName, "w") as jasonFile:
+        for var in vars:
+            jasonFile.write(var.lower() + "(X).")
+            jasonFile.write("\n")
 
 def setFixVariables(varsForAgent):
     #Prompt user to fix values for agent variables. This will be used as part of initial state
@@ -403,6 +414,8 @@ def generatePlans(varsAndValues, agents, goals, mcmasRaw, fixedInitialState, age
     powersetVars = powerset(vars) 
     allAgentVariablePermutations = list(product(powersetVars, repeat=numPermutations)) 
 
+    createJasonPlan(vars, agents, agentIndex)
+
     for goal in goals:
         for agentVariablePermutations in allAgentVariablePermutations:
             mcmasCopy = str(mcmasRaw) #Make a copy of raw text (we modify this copy)
@@ -521,6 +534,8 @@ def main():
     # Remove fixed environment variables from varsAndValues
     for fixedEnvVariable in fixedEnvVariables:
         varsAndValues.pop(fixedEnvVariable)
+
+    #goalAfterGoals = setGoalAfterGoal()
 
     agentIndex = getAgentOfInterest(agents)
 
