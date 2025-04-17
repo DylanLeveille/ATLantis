@@ -10,6 +10,8 @@ import sys
 from pathlib import Path
 from itertools import chain, combinations, product
 from networkx.drawing.nx_agraph import read_dot
+from tkinter import Tk
+from tkinter.filedialog import askopenfilename
 #################################
 ##         End Imports         ##
 #################################
@@ -133,7 +135,7 @@ def writeMCMASFile(binFolderPath, mcmasCopy):
     filePath = binFolderPath / mcmasInputFile
     filePath.write_text(mcmasCopy)
 
-def parseDOTFile( binFolderPath ):
+def parseDOTFile( binFolderPath, agentIndex ):
     #Parse the DOT file into a graph
     DOTFilePath = binFolderPath / mcmasOutputFile
     graph = read_dot( DOTFilePath )
@@ -165,15 +167,15 @@ def parseDOTFile( binFolderPath ):
             actionLabel = graph[currNode][neighbor].get(0).get('label')
             print(actionLabel)
 
-            #FIXME: We assume agent for which goals must be found is first agent
-            action = actionLabel.split(";")[1].strip()
+            #FIXME: no We assume agent for which goals must be found is first agent
+            action = actionLabel.split(";")[agentIndex + 1].strip()
             actions.append(action)
 
             currNode = neighbor
 
     return actions
 
-def findStrategy( mcmasCopy ):
+def findStrategy( mcmasCopy, agentIndex):
     #Setup before running MCMAS
     binFolderPath = createBinFolder()
     writeMCMASFile(binFolderPath, mcmasCopy)
@@ -202,14 +204,15 @@ def findStrategy( mcmasCopy ):
 
     #If we have a strategy, parse the dot file
     if startegyExists:
-        actionsPlan = parseDOTFile( binFolderPath )
+        actionsPlan = parseDOTFile( binFolderPath, agentIndex )
     else:
         actionsPlan = list()
 
     return startegyExists, actionsPlan
 
-def writeJasonPlan( strategyActions, goal, knownVars, knownPossibleValue, unknownVars, unknownPossibleValue, agentName):
+def writeJasonPlan( strategyActions, goal, knownVars, knownPossibleValue, unknownVars, unknownPossibleValue, agents, agentIndex, agentVariablePermutations, vars ):
     #currTime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    agentName = agents[agentIndex]
 
     jasonFileName = agentName + ".as"
 
@@ -233,6 +236,35 @@ def writeJasonPlan( strategyActions, goal, knownVars, knownPossibleValue, unknow
                 jasonFile.write("poss(" + unknownVars[i] + "=" + possValue + ")")
                 if ( i < len(unknownVars) - 1  or j < len(unknownPossibleValue[i]) - 1 ):
                     jasonFile.write(" &")
+        
+        # Include beliefs of variables that the agent believes other agents know / don't know
+        # Reminder: 0 holds the variables for agentIndex (i.e., the agent of interest)
+        for  i in range( len(agentVariablePermutations) ):
+            if 0 == i:
+                indexForPerm = agentIndex
+            elif agentIndex == i:
+                indexForPerm = 0
+            else:
+                indexForPerm = i
+            if not ( i == agentIndex ):
+                otherAgentName = agents[i]
+                otherAgentKnownVars = agentVariablePermutations[indexForPerm]
+                otherAgentUnknownVars = [var for var in vars if var not in otherAgentKnownVars]
+                for j in range( len(otherAgentKnownVars) ):
+                    otherAgentKnownVar = otherAgentKnownVars[j]
+                    jasonFile.write("\n")
+                    jasonFile.write("\t")
+                    jasonFile.write("K(" + otherAgentName + "," + otherAgentKnownVar + ")")
+                    if ( j < len(otherAgentKnownVars) - 1 ):
+                        jasonFile.write(" &")
+                
+                for j in range( len(otherAgentUnknownVars) ):
+                    otherAgentUnknownVar = otherAgentUnknownVars[j]
+                    jasonFile.write("\n")
+                    jasonFile.write("\t")
+                    jasonFile.write("not(K(" + otherAgentName + "," + otherAgentUnknownVar + "))")
+                    if ( j < len(otherAgentUnknownVars) - 1 ):
+                        jasonFile.write(" &")
 
         jasonFile.write("\n\t<-")
 
@@ -269,6 +301,16 @@ def setFixVariables(varsForAgent):
             fixedInitialState += " (" + "Environement" + "." + fixedVar + "=" + value.strip() + ") and "
 
     return fixedInitialState, fixedEnvVariables
+
+def getAgentOfInterest(agents):
+    #Prompt user for the agent that ATLantis should generate plans for
+    print("*** Agent of Interest ***")
+    for i in range(len(agents)):
+        print("\t" + str(i) + ") " + agents[i])
+     
+    agentIndex = input("Enter the index of the agent for which plans will be generated (e.g., 2): ")
+
+    return int(agentIndex.strip())
 
 def parseMCMASFile(mcmasRaw):
     varsAndValues = dict()
@@ -350,11 +392,11 @@ def parseMCMASFile(mcmasRaw):
 
     return varsAndValues, agents, varsForAgent, goals
 
-def generatePlans(varsAndValues, agents, goals, mcmasRaw, fixedInitialState):
+def generatePlans(varsAndValues, agents, goals, mcmasRaw, fixedInitialState, agentIndex):
     plans = list()
-    idealPlans = dict()
+    idealPlans = dict() # Holds ideal plans given the variables other agents know
     numAgents = len(agents)
-    numPermutations = 1 # Ideally, should be set to numAgents. But MCMAS, does not support knowledge based actions
+    numPermutations = numAgents 
     vars = list(varsAndValues.keys())
     vars.sort()
     
@@ -365,14 +407,24 @@ def generatePlans(varsAndValues, agents, goals, mcmasRaw, fixedInitialState):
         for agentVariablePermutations in allAgentVariablePermutations:
             mcmasCopy = str(mcmasRaw) #Make a copy of raw text (we modify this copy)
 
-            for i in range(numPermutations): #FIXME: We assume agent for which goals must be found is first agent
-                agentVariables = agentVariablePermutations[i]
-                
+            for i in range(numPermutations):
+                if 0 == i:
+                    indexForPerm = agentIndex
+                elif agentIndex == i:
+                    indexForPerm = 0
+                else:
+                    indexForPerm = i
+
+                agentVariables = agentVariablePermutations[indexForPerm]
+               
                 mcmasCopy = setLobsvarForAgent( agents[i], agentVariables, mcmasCopy )
 
-            knownVars = list(agentVariablePermutations[0]) #FIXME: We assume agent for which goals must be found is first agent
+            knownVars = list(agentVariablePermutations[0]) # 0 holds variables for the agent (i.e., at agentIndex in the agents list)
             unknownVars = [var for var in vars if var not in knownVars]
-            completeCertainty = True if len(unknownVars) == 0 else False 
+
+            # We assume strategies to be found are when complete certainty (the agent of interest knows the values of all variables)
+            # As variable permutations are ordered from biggest to smallest, this should only be true in the very first loop
+            completeCertainty = True if len(unknownVars) == 0 else False
             
             # A known variable can only possess one possible value
             # An unknown variable can posses any number of possible values 
@@ -392,21 +444,26 @@ def generatePlans(varsAndValues, agents, goals, mcmasRaw, fixedInitialState):
             for knownPossibleValue in knownPossibleValues: #Example: Card 1 = King and Card 2 = Ace
                 for unknownPossibleValue in unknownPossibleValues: #Example: ( poss(Card3 = King) and poss(Card3 = Queen); poss(Card4, King) and poss(Card4, Queen) )
                     
-                    # We don't want to apply the algorithm when an unkown variable has only one possible value
+                    # We don't want to apply the algorithm when an unknown variable has only one possible value
                     if not any( len(possValues) == 1 for possValues in unknownPossibleValue ):
                         #Set values in MCMAS file
                         mcmasCopy = setInitialState( knownPossibleValue, knownVars, unknownPossibleValue, unknownVars, mcmasCopy, fixedInitialState )
                         mcmasCopy = setGoal( goal, mcmasCopy)
 
                         #Find Strategies
-                        strategyExists, strategyActions = findStrategy( mcmasCopy )
+                        strategyExists, strategyActions = findStrategy( mcmasCopy, agentIndex)
 
                         #if complete certainty and goal true, add to idea plans list (complete knowledge strategies)
                         if completeCertainty:
                             if strategyExists:
-                                idealPlans[ tuple(knownPossibleValue) ] = strategyActions
+                                #Reminder, other agents' known variables are stored in elements 1 + of agentVariablePermutations
+                                otherAgentKnowledge = tuple(agentVariablePermutations[1:])
+                                if otherAgentKnowledge not in idealPlans:
+                                    idealPlans[otherAgentKnowledge] = dict()
+
+                                idealPlans[ otherAgentKnowledge ][ tuple(knownPossibleValue) ] = strategyActions
                             else:
-                                print("random action")
+                                print("random action") #FIXME: no random action, nothing to do except have new goal
                         #if partial certainty and goal false, loop uncertainty with goodie list until strat. 
                         else:
                             if not strategyExists:
@@ -428,8 +485,10 @@ def generatePlans(varsAndValues, agents, goals, mcmasRaw, fixedInitialState):
                                             unknownVarIndex += 1
 
                                     actualDictKey = tuple(dictKey)
-                                    if actualDictKey in idealPlans:
-                                        strategyActions = idealPlans[actualDictKey]
+                                    # Get ideal plans given what other agents knew about environment
+                                    applicablePlans = idealPlans[ tuple(agentVariablePermutations[1:]) ]
+                                    if actualDictKey in applicablePlans:
+                                        strategyActions = applicablePlans[actualDictKey]
                                         strategyExists = True
                                         break #we found a plan, so stop
 
@@ -438,8 +497,7 @@ def generatePlans(varsAndValues, agents, goals, mcmasRaw, fixedInitialState):
                             print("out of luck")
 
                         #Write Jason Plan
-                        #FIXME: We assume agent for which goals must be found is first agent
-                        writeJasonPlan( strategyActions, goal, knownVars, knownPossibleValue, unknownVars, unknownPossibleValue, agents[0] )
+                        writeJasonPlan( strategyActions, goal, knownVars, knownPossibleValue, unknownVars, unknownPossibleValue, agents, agentIndex, agentVariablePermutations, vars )
                 
             #break # to remove
 
@@ -448,10 +506,11 @@ def generatePlans(varsAndValues, agents, goals, mcmasRaw, fixedInitialState):
     return None
 
 def main():
-    #FIXME: We assume agent for which goals must be found is first agent
-    #FIXME: Change input ispl for user-specified
     #FIXME: Specify next goal for the agent for each goal
-    mcmasFile = open("examples/simple_card_game.ispl", "r", encoding="utf-8")
+
+    Tk().withdraw()
+    filePath = askopenfilename() 
+    mcmasFile = open(filePath, "r", encoding="utf-8")
     mcmasRaw = mcmasFile.read()
     mcmasFile.close()
 
@@ -463,7 +522,9 @@ def main():
     for fixedEnvVariable in fixedEnvVariables:
         varsAndValues.pop(fixedEnvVariable)
 
-    plans = generatePlans(varsAndValues, agents, goals, mcmasRaw, fixedInitialState)
+    agentIndex = getAgentOfInterest(agents)
+
+    plans = generatePlans(varsAndValues, agents, goals, mcmasRaw, fixedInitialState, agentIndex)
 
 #################################
 ##         End Functions       ##
