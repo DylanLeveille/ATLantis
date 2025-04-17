@@ -79,7 +79,7 @@ def setLobsvarForAgent( agent, agentVariables, mcmasCopy ):
 def setInitialState( knownPossibleValue, knownVars, unknownPossibleValue, unknownVars, mcmasCopy, fixedInitialState ):
     initialState = fixedInitialState + " "
     for i in range( len(knownVars) ):
-        initialState += "( Environment." + knownVars[i] + "=" + knownPossibleValue[i] + " )"
+        initialState += "( Environment." + knownVars[i] + "=" + str(knownPossibleValue[i]) + " )"
         initialState += " and "
 
     for i in range( len(unknownVars) ):
@@ -88,7 +88,7 @@ def setInitialState( knownPossibleValue, knownVars, unknownPossibleValue, unknow
 
         valuesForUnknownVar = unknownPossibleValue[i]
         for j in range( len(valuesForUnknownVar) ):
-            initialState+= "Environment." + unknownVar + "=" + valuesForUnknownVar[j]
+            initialState+= "Environment." + unknownVar + "=" + str(valuesForUnknownVar[j])
 
             if j != ( len(valuesForUnknownVar) - 1 ):
                 initialState += " or "
@@ -179,28 +179,27 @@ def findStrategy( mcmasCopy, agentIndex):
     binFolderPath = createBinFolder()
     writeMCMASFile(binFolderPath, mcmasCopy)
 
+    print("Trying uniform startegy...")
     #Run MCMAS for uniform strategy
     terminalResult = subprocess.run(uniformStrategyCommand, cwd=binFolderPath, capture_output=True, text=True)
 
     startegyExists = False
-    print("Trying uniform startegy...")
-    print(nonUniformStrategyCommand)
-    print(terminalResult.stdout)
+    #print(nonUniformStrategyCommand)
+    #print(terminalResult.stdout)
     if "TRUE in the model" in terminalResult.stdout: #Uniform strategy exists!
         print("Uniform!")
         startegyExists = True
     else: 
         print("No Uniform strategy...")
-        print(nonUniformStrategyCommand)
+        #print(nonUniformStrategyCommand)
         #Run MCMAS for non-uniform strategy
         terminalResult = subprocess.run(nonUniformStrategyCommand, cwd=binFolderPath, capture_output=True, text=True)
-        print(terminalResult.stdout)
+        #print(terminalResult.stdout)
         if "TRUE in the model" in terminalResult.stdout: #Non-uniform strategy exists!
             print("Non-Uniform!")
             startegyExists = True
         else:
             print("No Strategy!") #Hence, you probably want to avoid that goal with these pre-conditions
-
     #If we have a strategy, parse the dot file
     if startegyExists:
         actionsPlan = parseDOTFile( binFolderPath, agentIndex )
@@ -223,7 +222,7 @@ def writeJasonPlan( strategyActions, goal, knownVars, knownPossibleValue, unknow
         for  i in range( len(knownVars) ):
             jasonFile.write("\n")
             jasonFile.write("\t")
-            jasonFile.write(knownVars[i].lower() + "(" + knownPossibleValue[i] + ")")
+            jasonFile.write(knownVars[i].lower() + "(" + str(knownPossibleValue[i]) + ")")
             if ( len(unknownVars) > 0 or i < len(knownVars) - 1 ):
                 jasonFile.write(" &")
 
@@ -232,7 +231,7 @@ def writeJasonPlan( strategyActions, goal, knownVars, knownPossibleValue, unknow
                 possValue = unknownPossibleValue[i][j]
                 jasonFile.write("\n")
                 jasonFile.write("\t")
-                jasonFile.write("poss(" + unknownVars[i] + "=" + possValue + ")")
+                jasonFile.write("poss(" + unknownVars[i] + "=" + str(possValue) + ")")
                 if ( len(agentVariablePermutations) != 1 ):
                     jasonFile.write(" &")
                 elif ( (i < len(unknownVars) - 1 or j < len(unknownPossibleValue[i]) - 1) ):
@@ -255,7 +254,7 @@ def writeJasonPlan( strategyActions, goal, knownVars, knownPossibleValue, unknow
                     otherAgentKnownVar = otherAgentKnownVars[j]
                     jasonFile.write("\n")
                     jasonFile.write("\t")
-                    jasonFile.write("k(" + otherAgentName + "," + otherAgentKnownVar + ")")
+                    jasonFile.write("k(" + otherAgentName.lower() + "," + otherAgentKnownVar.lower() + ")")
                     if ( j < len(otherAgentKnownVars) - 1 ):
                         jasonFile.write(" &")
                 
@@ -263,7 +262,7 @@ def writeJasonPlan( strategyActions, goal, knownVars, knownPossibleValue, unknow
                     otherAgentUnknownVar = otherAgentUnknownVars[j]
                     jasonFile.write("\n")
                     jasonFile.write("\t")
-                    jasonFile.write("!k(" + otherAgentName + "," + otherAgentUnknownVar + ")")
+                    jasonFile.write("!k(" + otherAgentName.lower() + "," + otherAgentUnknownVar.lower() + ")")
                     if ( j < len(otherAgentUnknownVars) - 1 ):
                         jasonFile.write(" &")
 
@@ -300,7 +299,7 @@ def createJasonPlan(vars, agents, agentIndex):
 
 def convertGoalToJasonGoal(goal):
     #converts a ATL goal to a goal format Jason likes
-    return goal.strip()[:-1].lower().replace("<", "").replace(">","_").replace("(", "_").replace(")", "_")
+    return goal.strip()[:-1].lower().replace("<", "").replace(">","_").replace("(", "_").replace(")", "_").replace(" ", "_")
 
 
 def setFixVariables(varsForAgent):
@@ -322,7 +321,7 @@ def setFixVariables(varsForAgent):
             fixedVar = fixedVar.strip()
             fixedEnvVariables.append(fixedVar)
             value = input("Value for Environment." + fixedVar + " ?: ")
-            fixedInitialState += " (" + "Environement" + "." + fixedVar + "=" + value.strip() + ") and "
+            fixedInitialState += " (" + "Environment" + "." + fixedVar + "=" + value.strip() + ") and "
 
     return fixedInitialState, fixedEnvVariables
 
@@ -340,7 +339,7 @@ def setGoalsAfterGoals(goals):
         inputGoal = input("New goal after " + goals[i] + " is achieved: ")
 
         inputGoal = inputGoal.strip()
-        if not inputGoal: # no new goal
+        if 0 == len(inputGoal): # no new goal
             newGoals.append("true") #Jason goal for no new goal
         else:
             try:
@@ -371,31 +370,36 @@ def parseMCMASFile(mcmasRaw):
     #Extract environment variables and their values
     match = re.search(environmentVarsPattern, mcmasRaw)
     if match:
-
         #Extract the Vars section
-        varsSection = match.group(1)  
+        varsSection = str(match.group(1))  
 
         #Extract individual variables and values
-        match = re.findall(varAndValuesPattern, varsSection)
+        for line in varsSection.splitlines(): 
+            print(line)
+            line = line.strip()
+            if 0 != len(line):
+                line = line.split(":")
+                var = line[0]
+                value = line[1]
 
-        for var, value in match:
-            actualValues = list()
-            #value is a set of values
-            if "{" in value:
-                value = value.replace("{", "").replace("}", "")
-                for element in value.split(","):
-                    actualValues.append(element.strip())
+                actualValues = list()
+                #value is a set of values
+                if "{" in value:
+                    value = value.replace("{", "").replace("}", "")
+                    for element in value.split(","):
+                        actualValues.append(element.strip())
 
-            elif "boolean" in value:
-                actualValues.append("true")
-                actualValues.append("false")
-            
-            else: #has form x..y (i.e., integers x to y inclusive)
-                integersString = re.findall(r'\d+', value)
-                integers = list(map(int, integersString))
-                actualValues = list(range( integers[0], integers[1] ))
+                elif "boolean" in value:
+                    actualValues.append("true")
+                    actualValues.append("false")
+                
+                else: #has form x..y (i.e., integers x to y inclusive)
+                    integersString = re.findall(r'\d+', value)
+                    integers = list(map(int, integersString))
+                    # print(integers)
+                    actualValues = list(range( integers[0], integers[1] + 1 ))
 
-            varsAndValues[var.strip()] = actualValues
+                varsAndValues[var.strip()] = actualValues
     
     #Extract all Agents, except environement. And extract all Vars
     varsSection = False
@@ -539,11 +543,14 @@ def generatePlans(varsAndValues, agents, goals, mcmasRaw, fixedInitialState, age
 
                                     actualDictKey = tuple(dictKey)
                                     # Get ideal plans given what other agents knew about environment
-                                    applicablePlans = idealPlans[ tuple(agentVariablePermutations[1:]) ]
-                                    if actualDictKey in applicablePlans:
-                                        strategyActions = applicablePlans[actualDictKey]
-                                        strategyExists = True
-                                        break #we found a plan, so stop
+                                    # It maybe be there for a given knowledge of other agents, no ideal plan was ever found
+                                    otherAgentKnowledge = tuple(agentVariablePermutations[1:])
+                                    if otherAgentKnowledge in idealPlans:
+                                        applicablePlans = idealPlans[ otherAgentKnowledge ]
+                                        if actualDictKey in applicablePlans:
+                                            strategyActions = applicablePlans[actualDictKey]
+                                            strategyExists = True
+                                            break #we found a plan, so stop
 
                         #if we could not find actions to do, means we cannot achieve this goal no matter what we do (no chance of getting goal)            
                         if not strategyExists:
