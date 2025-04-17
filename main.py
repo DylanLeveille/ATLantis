@@ -167,7 +167,7 @@ def parseDOTFile( binFolderPath, agentIndex ):
             actionLabel = graph[currNode][neighbor].get(0).get('label')
             print(actionLabel)
 
-            action = actionLabel.split(";").replace(">;", "")[agentIndex + 1].strip()
+            action = actionLabel.split(";")[agentIndex + 1].replace(";", "").replace(">", "").strip()
             actions.append(action)
 
             currNode = neighbor
@@ -209,7 +209,7 @@ def findStrategy( mcmasCopy, agentIndex):
 
     return startegyExists, actionsPlan
 
-def writeJasonPlan( strategyActions, goal, knownVars, knownPossibleValue, unknownVars, unknownPossibleValue, agents, agentIndex, agentVariablePermutations, vars ):
+def writeJasonPlan( strategyActions, goal, knownVars, knownPossibleValue, unknownVars, unknownPossibleValue, agents, agentIndex, agentVariablePermutations, vars, newGoal):
     #currTime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     agentName = agents[agentIndex]
 
@@ -217,13 +217,13 @@ def writeJasonPlan( strategyActions, goal, knownVars, knownPossibleValue, unknow
 
     with open(jasonFileName, "a") as jasonFile:
         #Write goal
-        jasonFile.write("+!" + goal[:-1] + ":")
+        jasonFile.write("+!" + convertGoalToJasonGoal(goal) + ":")
 
         #Write pre-conditions
         for  i in range( len(knownVars) ):
             jasonFile.write("\n")
             jasonFile.write("\t")
-            jasonFile.write(knownVars[i].lower + "(" + knownPossibleValue[i] + ")")
+            jasonFile.write(knownVars[i].lower() + "(" + knownPossibleValue[i] + ")")
             if ( len(unknownVars) > 0 or i < len(knownVars) - 1 ):
                 jasonFile.write(" &")
 
@@ -255,7 +255,7 @@ def writeJasonPlan( strategyActions, goal, knownVars, knownPossibleValue, unknow
                     otherAgentKnownVar = otherAgentKnownVars[j]
                     jasonFile.write("\n")
                     jasonFile.write("\t")
-                    jasonFile.write("K(" + otherAgentName + "," + otherAgentKnownVar + ")")
+                    jasonFile.write("k(" + otherAgentName + "," + otherAgentKnownVar + ")")
                     if ( j < len(otherAgentKnownVars) - 1 ):
                         jasonFile.write(" &")
                 
@@ -263,7 +263,7 @@ def writeJasonPlan( strategyActions, goal, knownVars, knownPossibleValue, unknow
                     otherAgentUnknownVar = otherAgentUnknownVars[j]
                     jasonFile.write("\n")
                     jasonFile.write("\t")
-                    jasonFile.write("!K(" + otherAgentName + "," + otherAgentUnknownVar + ")")
+                    jasonFile.write("!k(" + otherAgentName + "," + otherAgentUnknownVar + ")")
                     if ( j < len(otherAgentUnknownVars) - 1 ):
                         jasonFile.write(" &")
 
@@ -273,10 +273,14 @@ def writeJasonPlan( strategyActions, goal, knownVars, knownPossibleValue, unknow
         jasonFile.write("\t")
         for i in range(len(strategyActions)):
             jasonFile.write(strategyActions[i])
-            if ( len(strategyActions) - 1 ==  ( i - 1 ) ): #last action, put .
-                jasonFile.write(".")
-            else:
-                jasonFile.write(";")
+            # if ( len(strategyActions) - 1 ==  ( i - 1 ) ): #last action, put .
+            #     jasonFile.write(".")
+            # else:
+            jasonFile.write(";")
+            jasonFile.write("\n")
+            jasonFile.write("\t")
+
+        jasonFile.write(newGoal + ".")
         
         jasonFile.write("\n\n")
 
@@ -289,6 +293,15 @@ def createJasonPlan(vars, agents, agentIndex):
         for var in vars:
             jasonFile.write(var.lower() + "(X).")
             jasonFile.write("\n")
+    
+        jasonFile.write("k(Y, X).")
+        jasonFile.write("\n")
+        jasonFile.write("\n")
+
+def convertGoalToJasonGoal(goal):
+    #converts a ATL goal to a goal format Jason likes
+    return goal.strip()[:-1].lower().replace("<", "").replace(">","_").replace("(", "_").replace(")", "_")
+
 
 def setFixVariables(varsForAgent):
     #Prompt user to fix values for agent variables. This will be used as part of initial state
@@ -312,6 +325,32 @@ def setFixVariables(varsForAgent):
             fixedInitialState += " (" + "Environement" + "." + fixedVar + "=" + value.strip() + ") and "
 
     return fixedInitialState, fixedEnvVariables
+
+def setGoalsAfterGoals(goals):
+    newGoals = list()
+
+    #Prompt user for the agent that ATLantis should generate plans for
+    print("*** Set New Goal After Goal is Reached ***")
+    for i in range(len(goals)):
+        print("\t" + str(i) + ") " + goals[i])
+
+    print("For each goal, input a new goal that will be active once it is achieved.")
+    print("You may enter the index of one of the goals above, a goal not presented above, or nothing.")
+    for i in range(len(goals)):
+        inputGoal = input("New goal after " + goals[i] + " is achieved: ")
+
+        inputGoal = inputGoal.strip()
+        if not inputGoal: # no new goal
+            newGoals.append("true") #Jason goal for no new goal
+        else:
+            try:
+                indexVal = int(inputGoal)
+                newGoals.append(convertGoalToJasonGoal(goals[indexVal]))
+            except:
+                #Must be a new goal
+                newGoals.append(inputGoal.replace(" ", "").lower())
+
+    return newGoals
 
 def getAgentOfInterest(agents):
     #Prompt user for the agent that ATLantis should generate plans for
@@ -403,7 +442,7 @@ def parseMCMASFile(mcmasRaw):
 
     return varsAndValues, agents, varsForAgent, goals
 
-def generatePlans(varsAndValues, agents, goals, mcmasRaw, fixedInitialState, agentIndex):
+def generatePlans(varsAndValues, agents, goals, mcmasRaw, fixedInitialState, agentIndex, goalAfterGoals):
     plans = list()
     idealPlans = dict() # Holds ideal plans given the variables other agents know
     numAgents = len(agents)
@@ -416,7 +455,8 @@ def generatePlans(varsAndValues, agents, goals, mcmasRaw, fixedInitialState, age
 
     createJasonPlan(vars, agents, agentIndex)
 
-    for goal in goals:
+    for goalIndex in range(len(goals)):
+        goal = goals[goalIndex]
         for agentVariablePermutations in allAgentVariablePermutations:
             mcmasCopy = str(mcmasRaw) #Make a copy of raw text (we modify this copy)
 
@@ -510,7 +550,7 @@ def generatePlans(varsAndValues, agents, goals, mcmasRaw, fixedInitialState, age
                             print("out of luck")
 
                         #Write Jason Plan
-                        writeJasonPlan( strategyActions, goal, knownVars, knownPossibleValue, unknownVars, unknownPossibleValue, agents, agentIndex, agentVariablePermutations, vars )
+                        writeJasonPlan( strategyActions, goal, knownVars, knownPossibleValue, unknownVars, unknownPossibleValue, agents, agentIndex, agentVariablePermutations, vars, goalAfterGoals[goalIndex])
                 
             #break # to remove
 
@@ -535,11 +575,11 @@ def main():
     for fixedEnvVariable in fixedEnvVariables:
         varsAndValues.pop(fixedEnvVariable)
 
-    #goalAfterGoals = setGoalAfterGoal()
+    goalAfterGoals = setGoalsAfterGoals(goals)
 
     agentIndex = getAgentOfInterest(agents)
 
-    plans = generatePlans(varsAndValues, agents, goals, mcmasRaw, fixedInitialState, agentIndex)
+    plans = generatePlans(varsAndValues, agents, goals, mcmasRaw, fixedInitialState, agentIndex, goalAfterGoals)
 
 #################################
 ##         End Functions       ##
