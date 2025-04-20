@@ -165,12 +165,12 @@ InitStates
 end InitStates
 
 Groups
-	g1 = {RA};
+	g1 = {BA};
 end Groups
 
 Fairness
 end Fairness
 
 Formulae
-	<g1>  F(RATreasure and !(treasureTaken) and !RAMined and (<g1> X( RAMined and treasureTaken) ) );
+	<g1>  F(BATreasure and !(treasureTaken) and !BAMined and (<g1> X( BAMined and treasureTaken) ) );
 end Formulae

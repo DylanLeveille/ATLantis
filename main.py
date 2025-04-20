@@ -40,8 +40,8 @@ mcmasInputFile = "input.ispl"
 mcmasOutputFile = "formula1.dot"
 
 #MCMAS uniform and non-uniform strategy commands
-uniformStrategyCommand = ["../mcmas/mcmas-linux64-1.3.0", "-c", "3", "-uniform", mcmasInputFile ]
-nonUniformStrategyCommand = ["../mcmas/mcmas-linux64-1.3.0", "-c", "3", mcmasInputFile ]
+uniformStrategyCommand = ["./../mcmas/mcmas-linux64-1.3.0", "-c", "3", "-uniform", mcmasInputFile ]
+nonUniformStrategyCommand = ["./../mcmas/mcmas-linux64-1.3.0", "-c", "3", mcmasInputFile ]
 
 #################################
 ##         End Globals         ##
@@ -174,28 +174,42 @@ def parseDOTFile( binFolderPath, agentIndex ):
 
     return actions
 
-def findStrategy( mcmasCopy, agentIndex):
+def findStrategy( mcmasCopy, agentIndex, skipUniform ):
     #Setup before running MCMAS
     binFolderPath = createBinFolder()
     writeMCMASFile(binFolderPath, mcmasCopy)
+    timeout=False
 
-    print("Trying uniform startegy...")
     #Run MCMAS for uniform strategy
-    terminalResult = subprocess.run(uniformStrategyCommand, cwd=binFolderPath, capture_output=True, text=True)
-
+    if not skipUniform:
+        print("Trying uniform strategy...")
+        try:
+            terminalResult = subprocess.run(uniformStrategyCommand, cwd=binFolderPath, capture_output=True, text=True, timeout=1.5)
+        except: 
+            timeout = True
+            print("timeout")
+    
     startegyExists = False
     #print(nonUniformStrategyCommand)
     #print(terminalResult.stdout)
-    if "TRUE in the model" in terminalResult.stdout: #Uniform strategy exists!
+    if not skipUniform and not timeout and "TRUE in the model" in terminalResult.stdout: #Uniform strategy exists!
         print("Uniform!")
         startegyExists = True
     else: 
-        print("No Uniform strategy...")
+        if not skipUniform:
+            print("No Uniform strategy...")
+
+        timeout = False
         #print(nonUniformStrategyCommand)
         #Run MCMAS for non-uniform strategy
-        terminalResult = subprocess.run(nonUniformStrategyCommand, cwd=binFolderPath, capture_output=True, text=True)
+        try:
+            terminalResult = subprocess.run(nonUniformStrategyCommand, cwd=binFolderPath, capture_output=True, text=True, timeout=1.5)
+        except: 
+            timeout = True
+            print("tiemout")
+        
         #print(terminalResult.stdout)
-        if "TRUE in the model" in terminalResult.stdout: #Non-uniform strategy exists!
+        if not timeout and "TRUE in the model" in terminalResult.stdout: #Non-uniform strategy exists!
             print("Non-Uniform!")
             startegyExists = True
         else:
@@ -299,7 +313,7 @@ def createJasonPlan(vars, agents, agentIndex):
 
 def convertGoalToJasonGoal(goal):
     #converts a ATL goal to a goal format Jason likes
-    return goal.strip()[:-1].lower().replace("<", "").replace(">","_").replace("(", "_").replace(")", "_").replace(" ", "_")
+    return goal.strip()[:-1].lower().replace("<", "").replace(">","_").replace("(", "_").replace(")", "_").replace(" ", "_").replace("!", "")
 
 
 def setFixVariables(varsForAgent):
@@ -315,7 +329,7 @@ def setFixVariables(varsForAgent):
     print("*** Set Environment Variables ***")     
     shouldFixEnvVariables = input("Should any environment variables be statically set? (y/n): ")
     fixedEnvVariables = list()
-    if ( shouldFixEnvVariables.strip() == "y" ):
+    if ( shouldFixEnvVariables.lower().strip() == "y" ):
         fixEnvVariables = input("Which variables? (comma seperated): ")
         for fixedVar in fixEnvVariables.split(","):
             fixedVar = fixedVar.strip()
@@ -360,6 +374,18 @@ def getAgentOfInterest(agents):
     agentIndex = input("Enter the index of the agent for which plans will be generated (e.g., 2): ")
 
     return int(agentIndex.strip())
+
+def getUniformShouldBeSkipped():
+    #Prompt user if uniform startegies should be skipped in ATLantis
+    print("*** Ignore Uniform Strategies? ***")
+    shouldSkip = False
+     
+    skipUniformInput = input("To enhance performance, should ATLantis ignore uniform strategies? (y/n): ")
+
+    if ( skipUniformInput.lower().strip() == "y" ):
+        shouldSkip = True
+
+    return shouldSkip
 
 def parseMCMASFile(mcmasRaw):
     varsAndValues = dict()
@@ -446,7 +472,7 @@ def parseMCMASFile(mcmasRaw):
 
     return varsAndValues, agents, varsForAgent, goals
 
-def generatePlans(varsAndValues, agents, goals, mcmasRaw, fixedInitialState, agentIndex, goalAfterGoals):
+def generatePlans(varsAndValues, agents, goals, mcmasRaw, fixedInitialState, agentIndex, goalAfterGoals, skipUniform):
     plans = list()
     idealPlans = dict() # Holds ideal plans given the variables other agents know
     numAgents = len(agents)
@@ -508,7 +534,7 @@ def generatePlans(varsAndValues, agents, goals, mcmasRaw, fixedInitialState, age
                         mcmasCopy = setGoal( goal, mcmasCopy)
 
                         #Find Strategies
-                        strategyExists, strategyActions = findStrategy( mcmasCopy, agentIndex)
+                        strategyExists, strategyActions = findStrategy( mcmasCopy, agentIndex, skipUniform )
 
                         #if complete certainty and goal true, add to idea plans list (complete knowledge strategies)
                         if completeCertainty:
@@ -566,7 +592,7 @@ def generatePlans(varsAndValues, agents, goals, mcmasRaw, fixedInitialState, age
     return None
 
 def main():
-    #FIXME: Specify next goal for the agent for each goal
+    #FIXME: put fixed environment avriables in AS outout (e.g., treasureMined(false))
 
     Tk().withdraw()
     filePath = askopenfilename() 
@@ -586,7 +612,9 @@ def main():
 
     agentIndex = getAgentOfInterest(agents)
 
-    plans = generatePlans(varsAndValues, agents, goals, mcmasRaw, fixedInitialState, agentIndex, goalAfterGoals)
+    skipUniform = getUniformShouldBeSkipped()
+
+    plans = generatePlans(varsAndValues, agents, goals, mcmasRaw, fixedInitialState, agentIndex, goalAfterGoals, skipUniform)
 
 #################################
 ##         End Functions       ##
