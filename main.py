@@ -237,7 +237,7 @@ def writeJasonPlan( strategyActions, goal, knownVars, knownPossibleValue, unknow
             jasonFile.write("\n")
             jasonFile.write("\t")
             jasonFile.write(knownVars[i].lower() + "(" + str(knownPossibleValue[i]) + ")")
-            if ( len(unknownVars) > 0 or i < len(knownVars) - 1 ):
+            if ( len( agentVariablePermutations ) > 1 ): # at least two agents
                 jasonFile.write(" &")
 
         for  i in range( len(unknownVars) ):
@@ -245,7 +245,7 @@ def writeJasonPlan( strategyActions, goal, knownVars, knownPossibleValue, unknow
                 possValue = unknownPossibleValue[i][j]
                 jasonFile.write("\n")
                 jasonFile.write("\t")
-                jasonFile.write("poss(" + unknownVars[i] + "=" + str(possValue) + ")")
+                jasonFile.write("poss(" + unknownVars[i].lower() + "(" + str(possValue) + "))")
                 if ( len(agentVariablePermutations) != 1 ):
                     jasonFile.write(" &")
                 elif ( (i < len(unknownVars) - 1 or j < len(unknownPossibleValue[i]) - 1) ):
@@ -269,7 +269,7 @@ def writeJasonPlan( strategyActions, goal, knownVars, knownPossibleValue, unknow
                     jasonFile.write("\n")
                     jasonFile.write("\t")
                     jasonFile.write("k(" + otherAgentName.lower() + "," + otherAgentKnownVar.lower() + ")")
-                    if ( j < len(otherAgentKnownVars) - 1 ):
+                    if ( len(otherAgentUnknownVars) > 0 or j < len(otherAgentKnownVars) - 1 ):
                         jasonFile.write(" &")
                 
                 for j in range( len(otherAgentUnknownVars) ):
@@ -281,6 +281,11 @@ def writeJasonPlan( strategyActions, goal, knownVars, knownPossibleValue, unknow
                         jasonFile.write(" &")
 
         jasonFile.write("\n\t<-")
+
+        #Write drop_all_intentions
+        jasonFile.write("\n")
+        jasonFile.write("\t")
+        jasonFile.write(".drop_all_intentions;")
 
         jasonFile.write("\n")
         jasonFile.write("\t")
@@ -592,8 +597,8 @@ def generatePlans(varsAndValues, agents, goals, mcmasRaw, fixedInitialState, age
     return None
 
 def main():
-    #FIXME: put fixed environment avriables in AS outout (e.g., treasureMined(false))
-
+    #FIXME: put fixed environment avriables in AS outout (e.g., treasureMined(false)). This is in Lobvar on main agent. This variable flops between known and unknown for opponent.
+    #FIXME: goal names should be set to more simple strings
     Tk().withdraw()
     filePath = askopenfilename() 
     mcmasFile = open(filePath, "r", encoding="utf-8")
