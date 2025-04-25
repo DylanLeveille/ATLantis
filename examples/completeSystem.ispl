@@ -1,0 +1,179 @@
+Agent Environment
+    Vars:
+    	rowBA : 0..3;
+    	columnBA : 0..2;
+    	rowRA : 0..3;
+    	columnRA : 0..2;
+    	treasureMined: boolean; -- only true if 1,1 and mined action
+    end Vars
+    Actions = { none };
+    Protocol:
+    	Other : {none};
+    end Protocol
+    Evolution:
+    		--Both Agents do variable-changing actions
+    		--BA goes down
+		rowBA = rowBA + 1 and rowRA = rowRA + 1 if (BA.Action = down and !(rowBA = 3) and RA.Action = down and !(rowRA = 3));
+		rowBA = rowBA + 1 and rowRA = rowRA - 1 if (BA.Action = down and !(rowBA = 3) and RA.Action = up and !(rowRA = 0));
+		rowBA = rowBA + 1 and columnRA = columnRA + 1 if (BA.Action = down and !(rowBA = 3) and RA.Action = right and !(columnRA = 2));
+		rowBA = rowBA + 1 and columnRA = columnRA - 1 if (BA.Action = down and !(rowBA = 3) and RA.Action = left and !(columnRA = 0));
+		rowBA = rowBA + 1 and treasureMined=true if (BA.Action = down and !(rowBA = 3) and RA.Action = mine and (columnRA = 2 and rowRA = 3));
+		
+		--BA goes up
+		rowBA = rowBA - 1 and rowRA = rowRA + 1 if (BA.Action = up and !(rowBA = 0) and RA.Action = down and !(rowRA = 3));
+		rowBA = rowBA - 1 and rowRA = rowRA - 1 if (BA.Action = up and !(rowBA = 0) and RA.Action = up and !(rowRA = 0));
+		rowBA = rowBA - 1 and columnRA = columnRA + 1 if (BA.Action = up and !(rowBA = 0) and RA.Action = right and !(columnRA = 2));
+		rowBA = rowBA - 1 and columnRA = columnRA - 1 if (BA.Action = up and !(rowBA = 0) and RA.Action = left and !(columnRA = 0));
+		rowBA = rowBA - 1 and treasureMined=true if (BA.Action = up and !(rowBA = 0) and RA.Action = mine and (columnRA = 2 and rowRA = 3));
+		
+		--BA goes right		
+		columnBA = columnBA + 1 and rowRA = rowRA + 1 if (BA.Action = right and !(columnBA = 2) and RA.Action = down and !(rowRA = 3)); 
+		columnBA = columnBA + 1 and rowRA = rowRA - 1 if (BA.Action = right and !(columnBA = 2) and RA.Action = up and !(rowRA = 0)); 
+		columnBA = columnBA + 1 and columnRA = columnRA + 1 if (BA.Action = right and !(columnBA = 2) and RA.Action = right and !(columnRA = 2)); 
+		columnBA = columnBA + 1 and columnRA = columnRA - 1 if (BA.Action = right and !(columnBA = 2) and RA.Action = left and !(columnRA = 0)); 
+		columnBA = columnBA + 1 and treasureMined = true if (BA.Action = right and !(columnBA = 2) and RA.Action = mine and (columnRA = 2 and rowRA = 3)); 
+		
+		--BA goes left		
+		columnBA = columnBA - 1 and rowRA = rowRA + 1 if (BA.Action = left and !(columnBA = 0) and RA.Action = down and !(rowRA = 3));
+		columnBA = columnBA - 1 and rowRA = rowRA - 1 if (BA.Action = left and !(columnBA = 0) and RA.Action = up and !(rowRA = 0));
+		columnBA = columnBA - 1 and columnRA = columnRA + 1 if (BA.Action = left and !(columnBA = 0) and RA.Action = right and !(columnRA = 2));
+		columnBA = columnBA - 1 and columnRA = columnRA - 1 if (BA.Action = left and !(columnBA = 0) and RA.Action = left and !(columnRA = 0));
+		columnBA = columnBA - 1 and treasureMined = true if (BA.Action = left and !(columnBA = 0) and RA.Action = mine and (columnRA = 2 and rowRA = 3)); 
+		
+		--BA mines treasure
+		treasureMined = true and rowRA = rowRA + 1 if (BA.Action = mine and (columnBA = 2 and rowBA = 3) and RA.Action = down and !(rowRA = 3));
+		treasureMined = true and rowRA = rowRA - 1 if (BA.Action = mine and (columnBA = 2 and rowBA = 3) and RA.Action = up and !(rowRA = 0));
+		treasureMined = true and columnRA = columnRA + 1 if (BA.Action = mine and (columnBA = 2 and rowBA = 3) and RA.Action = right and !(columnRA = 2));
+		treasureMined = true and columnRA = columnRA - 1 if (BA.Action = mine and (columnBA = 2 and rowBA = 3) and RA.Action = left and !(columnRA = 0));
+		treasureMined = true if (BA.Action = mine and (columnBA = 2 and rowBA = 3) and RA.Action = mine and (columnRA = 2 and rowRA = 3)); 
+		
+		
+		--Only BA does variable-changing actions
+		--BA goes down
+		rowBA = rowBA + 1 if (BA.Action = down and !(rowBA = 3) and RA.Action = down and (rowRA = 3));
+		rowBA = rowBA + 1  if (BA.Action = down and !(rowBA = 3) and RA.Action = up and (rowRA = 0));
+		rowBA = rowBA + 1 if (BA.Action = down and !(rowBA = 3) and RA.Action = right and (columnRA = 2));
+		rowBA = rowBA + 1  if (BA.Action = down and !(rowBA = 3) and RA.Action = left and (columnRA = 0));
+		rowBA = rowBA + 1 if (BA.Action = down and !(rowBA = 3) and RA.Action = mine and !(columnRA = 2 and rowRA = 3));
+		
+		--BA goes up
+		rowBA = rowBA - 1 if (BA.Action = up and !(rowBA = 0) and RA.Action = down and (rowRA = 3));
+		rowBA = rowBA - 1  if (BA.Action = up and !(rowBA = 0) and RA.Action = up and (rowRA = 0));
+		rowBA = rowBA - 1 if (BA.Action = up and !(rowBA = 0) and RA.Action = right and (columnRA = 2));
+		rowBA = rowBA - 1 if (BA.Action = up and !(rowBA = 0) and RA.Action = left and (columnRA = 0));
+		rowBA = rowBA - 1 if (BA.Action = up and !(rowBA = 0) and RA.Action = mine and !(columnRA = 2 and rowRA = 3));
+		
+		--BA goes right		
+		columnBA = columnBA + 1  if (BA.Action = right and !(columnBA = 2) and RA.Action = down and (rowRA = 3)); 
+		columnBA = columnBA + 1  if (BA.Action = right and !(columnBA = 2) and RA.Action = up and (rowRA = 0)); 
+		columnBA = columnBA + 1  if (BA.Action = right and !(columnBA = 2) and RA.Action = right and (columnRA = 2)); 
+		columnBA = columnBA + 1  if (BA.Action = right and !(columnBA = 2) and RA.Action = left and (columnRA = 0)); 
+		columnBA = columnBA + 1  if (BA.Action = right and !(columnBA = 2) and RA.Action = mine and !(columnRA = 2 and rowRA = 3)); 
+		
+		--BA goes left		
+		columnBA = columnBA - 1  if (BA.Action = left and !(columnBA = 0) and RA.Action = down and (rowRA = 3));
+		columnBA = columnBA - 1 if (BA.Action = left and !(columnBA = 0) and RA.Action = up and (rowRA = 0));
+		columnBA = columnBA - 1 if (BA.Action = left and !(columnBA = 0) and RA.Action = right and (columnRA = 2));
+		columnBA = columnBA - 1 if (BA.Action = left and !(columnBA = 0) and RA.Action = left and (columnRA = 0));
+		columnBA = columnBA - 1 if (BA.Action = left and !(columnBA = 0) and RA.Action = mine and !(columnRA = 2 and rowRA = 3)); 
+		
+		--BA mines treasure
+		treasureMined = true  if (BA.Action = mine and (columnBA = 2 and rowBA = 3) and RA.Action = down and (rowRA = 3));
+		treasureMined = true  if (BA.Action = mine and (columnBA = 2 and rowBA = 3) and RA.Action = up and (rowRA = 0));
+		treasureMined = true if (BA.Action = mine and (columnBA = 2 and rowBA = 3) and RA.Action = right and (columnRA = 2));
+		treasureMined = true  if (BA.Action = mine and (columnBA = 2 and rowBA = 3) and RA.Action = left and (columnRA = 0));
+		treasureMined = true if (BA.Action = mine and (columnBA = 2 and rowBA = 3) and RA.Action = mine and !(columnRA = 2 and rowRA = 3)); 
+		
+		--Only RA does Variable-changing actions
+		--RA goes down
+		rowRA = rowRA + 1 if (RA.Action = down and !(rowRA = 3) and BA.Action = down and (rowBA = 3));
+		rowRA = rowRA + 1  if (RA.Action = down and !(rowRA = 3) and BA.Action = up and (rowBA = 0));
+		rowRA = rowRA + 1 if (RA.Action = down and !(rowRA = 3) and BA.Action = right and (columnBA = 2));
+		rowRA = rowRA + 1  if (RA.Action = down and !(rowRA = 3) and BA.Action = left and (columnBA = 0));
+		rowRA = rowRA + 1 if (RA.Action = down and !(rowRA = 3) and BA.Action = mine and !(columnBA = 2 and rowBA = 3));
+		
+		--RA goes up
+		rowRA = rowRA - 1 if (RA.Action = up and !(rowRA = 0) and BA.Action = down and (rowBA = 3));
+		rowRA = rowRA - 1  if (RA.Action = up and !(rowRA = 0) and BA.Action = up and (rowBA = 0));
+		rowRA = rowRA - 1 if (RA.Action = up and !(rowRA = 0) and BA.Action = right and (columnBA = 2));
+		rowRA = rowRA - 1 if (RA.Action = up and !(rowRA = 0) and BA.Action = left and (columnBA = 0));
+		rowRA = rowRA - 1 if (RA.Action = up and !(rowRA = 0) and BA.Action = mine and !(columnBA = 2 and rowBA = 3));
+		
+		--RA goes right		
+		columnRA = columnRA + 1  if (RA.Action = right and !(columnRA = 2) and BA.Action = down and (rowBA = 3)); 
+		columnRA = columnRA + 1  if (RA.Action = right and !(columnRA = 2) and BA.Action = up and (rowBA = 0)); 
+		columnRA = columnRA + 1  if (RA.Action = right and !(columnRA = 2) and BA.Action = right and (columnBA = 2)); 
+		columnRA = columnRA + 1  if (RA.Action = right and !(columnRA = 2) and BA.Action = left and (columnBA = 0)); 
+		columnRA = columnRA + 1  if (RA.Action = right and !(columnRA = 2) and BA.Action = mine and !(columnBA = 2 and rowBA = 3)); 
+		
+		--RA goes left		
+		columnRA = columnRA - 1  if (RA.Action = left and !(columnRA = 0) and BA.Action = down and (rowBA = 3));
+		columnRA = columnRA - 1 if (RA.Action = left and !(columnRA = 0) and BA.Action = up and (rowBA = 0));
+		columnRA = columnRA - 1 if (RA.Action = left and !(columnRA = 0) and BA.Action = right and (columnBA = 2));
+		columnRA = columnRA - 1 if (RA.Action = left and !(columnRA = 0) and BA.Action = left and (columnBA = 0));
+		columnRA = columnRA - 1 if (RA.Action = left and !(columnRA = 0) and BA.Action = mine and !(columnBA = 2 and rowBA = 3)); 
+		
+		--RA mines treasure
+		treasureMined = true  if (RA.Action = mine and (columnRA = 2 and rowRA = 3) and BA.Action = down and (rowBA = 3));
+		treasureMined = true  if (RA.Action = mine and (columnRA = 2 and rowRA = 3) and BA.Action = up and (rowBA = 0));
+		treasureMined = true if (RA.Action = mine and (columnRA = 2 and rowRA = 3) and BA.Action = right and (columnBA = 2));
+		treasureMined = true  if (RA.Action = mine and (columnRA = 2 and rowRA = 3) and BA.Action = left and (columnBA = 0));
+		treasureMined = true if (RA.Action = mine and (columnRA = 2 and rowRA = 3) and BA.Action = mine and !(columnBA = 2 and rowBA = 3)); 
+		
+		
+		
+    end Evolution
+end Agent
+
+Agent BA
+    Lobsvars={};
+    Vars:
+	mined: boolean;
+    end Vars
+    Actions = {right, left, up, down, mine};
+    Protocol:
+    	Other : {right, left, up, down, mine};
+    end Protocol
+    Evolution:
+    	mined = true if BA.Action = mine;
+    end Evolution
+end Agent
+
+Agent RA
+    Lobsvars={};
+    Vars:
+	mined: boolean;
+    end Vars
+    Actions = {right, left, up, down, mine};
+    Protocol:
+    	Other : {right, left, up, down, mine};
+    end Protocol
+    Evolution:
+    	mined = true if RA.Action = mine;
+    end Evolution
+end Agent
+
+Evaluation
+	BATreasure if  Environment.rowBA=3 and  Environment.columnBA=1;
+	RATreasure if  Environment.rowRA=3 and  Environment.columnRA=1;
+	RAMined if  RA.mined = true;
+	BAMined if  BA.mined = true;
+	treasureTaken if Environment.treasureMined = true; 
+end Evaluation
+
+InitStates
+          ( Environment.rowBA=0 and Environment.columnBA=0 
+          and Environment.rowRA=1  and  Environment.columnRA=0 
+          and BA.mined=false and RA.mined=false and Environment.treasureMined=false );
+end InitStates
+
+Groups
+	g1 = {BA,RA};
+end Groups
+
+Fairness
+end Fairness
+
+Formulae
+	<g1>  F(BATreasure and RATreasure );
+end Formulae
