@@ -13,111 +13,111 @@ Agent Environment
     Evolution:
     		--Both Agents do variable-changing actions
     		--BA goes down
-		rowBA = rowBA + 1 and rowRA = rowRA + 1 if (BA.Action = down and !(rowBA = 3) and RA.Action = down and !(rowRA = 3));
-		rowBA = rowBA + 1 and rowRA = rowRA - 1 if (BA.Action = down and !(rowBA = 3) and RA.Action = up and !(rowRA = 0));
-		rowBA = rowBA + 1 and columnRA = columnRA + 1 if (BA.Action = down and !(rowBA = 3) and RA.Action = right and !(columnRA = 2));
-		rowBA = rowBA + 1 and columnRA = columnRA - 1 if (BA.Action = down and !(rowBA = 3) and RA.Action = left and !(columnRA = 0));
-		rowBA = rowBA + 1 and treasureMined=true if (BA.Action = down and !(rowBA = 3) and RA.Action = mine and (columnRA = 2 and rowRA = 3));
+		rowBA = rowBA + 1 and rowRA = rowRA + 1 if (BA.Action = down and !(rowBA = 3) and !(rowBA = 0 and columnBA = 1) and RA.Action = down and !(rowRA = 3) and !(rowRA = 0 and columnRA = 1));
+		rowBA = rowBA + 1 and rowRA = rowRA - 1 if (BA.Action = down and !(rowBA = 3) and !(rowBA = 0 and columnBA = 1) and RA.Action = up and !(rowRA = 0) and !(rowRA = 3 and columnRA = 1));
+		rowBA = rowBA + 1 and columnRA = columnRA + 1 if (BA.Action = down and !(rowBA = 3) and !(rowBA = 0 and columnBA = 1) and RA.Action = right and !(columnRA = 2) and !(columnRA = 0 and (rowRA = 1 or rowRA = 2)));
+		rowBA = rowBA + 1 and columnRA = columnRA - 1 if (BA.Action = down and !(rowBA = 3) and !(rowBA = 0 and columnBA = 1) and RA.Action = left and !(columnRA = 0) and !(columnRA = 2 and (rowRA = 2 or rowRA = 3)));
+		rowBA = rowBA + 1 and treasureMined=true if (BA.Action = down and !(rowBA = 3) and !(rowBA = 0 and columnBA = 1) and RA.Action = mine and (columnRA = 2 and rowRA = 3));
 		
 		--BA goes up
-		rowBA = rowBA - 1 and rowRA = rowRA + 1 if (BA.Action = up and !(rowBA = 0) and RA.Action = down and !(rowRA = 3));
-		rowBA = rowBA - 1 and rowRA = rowRA - 1 if (BA.Action = up and !(rowBA = 0) and RA.Action = up and !(rowRA = 0));
-		rowBA = rowBA - 1 and columnRA = columnRA + 1 if (BA.Action = up and !(rowBA = 0) and RA.Action = right and !(columnRA = 2));
-		rowBA = rowBA - 1 and columnRA = columnRA - 1 if (BA.Action = up and !(rowBA = 0) and RA.Action = left and !(columnRA = 0));
-		rowBA = rowBA - 1 and treasureMined=true if (BA.Action = up and !(rowBA = 0) and RA.Action = mine and (columnRA = 2 and rowRA = 3));
+		rowBA = rowBA - 1 and rowRA = rowRA + 1 if (BA.Action = up and !(rowBA = 0) and !(rowBA = 3 and columnBA = 1) and RA.Action = down and !(rowRA = 3) and !(rowRA = 0 and columnRA = 1));
+		rowBA = rowBA - 1 and rowRA = rowRA - 1 if (BA.Action = up and !(rowBA = 0) and !(rowBA = 3 and columnBA = 1) and RA.Action = up and !(rowRA = 0) and !(rowRA = 3 and columnRA = 1));
+		rowBA = rowBA - 1 and columnRA = columnRA + 1 if (BA.Action = up and !(rowBA = 0) and !(rowBA = 3 and columnBA = 1) and RA.Action = right and !(columnRA = 2) and !(columnRA = 0 and (rowRA = 1 or rowRA = 2)));
+		rowBA = rowBA - 1 and columnRA = columnRA - 1 if (BA.Action = up and !(rowBA = 0) and !(rowBA = 3 and columnBA = 1) and RA.Action = left and !(columnRA = 0) and !(columnRA = 2 and (rowRA = 2 or rowRA = 3)));
+		rowBA = rowBA - 1 and treasureMined=true if (BA.Action = up and !(rowBA = 0) and !(rowBA = 3 and columnBA = 1) and RA.Action = mine and (columnRA = 2 and rowRA = 3));
 		
 		--BA goes right		
-		columnBA = columnBA + 1 and rowRA = rowRA + 1 if (BA.Action = right and !(columnBA = 2) and RA.Action = down and !(rowRA = 3)); 
-		columnBA = columnBA + 1 and rowRA = rowRA - 1 if (BA.Action = right and !(columnBA = 2) and RA.Action = up and !(rowRA = 0)); 
-		columnBA = columnBA + 1 and columnRA = columnRA + 1 if (BA.Action = right and !(columnBA = 2) and RA.Action = right and !(columnRA = 2)); 
-		columnBA = columnBA + 1 and columnRA = columnRA - 1 if (BA.Action = right and !(columnBA = 2) and RA.Action = left and !(columnRA = 0)); 
-		columnBA = columnBA + 1 and treasureMined = true if (BA.Action = right and !(columnBA = 2) and RA.Action = mine and (columnRA = 2 and rowRA = 3)); 
+		columnBA = columnBA + 1 and rowRA = rowRA + 1 if (BA.Action = right and !(columnBA = 2) and !(columnBA = 0 and (rowBA = 1 or rowBA = 2)) and RA.Action = down and !(rowRA = 3) and !(rowRA = 0 and columnRA = 1)); 
+		columnBA = columnBA + 1 and rowRA = rowRA - 1 if (BA.Action = right and !(columnBA = 2) and !(columnBA = 0 and (rowBA = 1 or rowBA = 2)) and RA.Action = up and !(rowRA = 0) and !(rowRA = 3 and columnRA = 1)); 
+		columnBA = columnBA + 1 and columnRA = columnRA + 1 if (BA.Action = right and !(columnBA = 0 and (rowBA = 1 or rowBA = 2)) and !(columnBA = 2) and RA.Action = right and !(columnRA = 2) and !(columnRA = 0 and (rowRA = 1 or rowRA = 2))); 
+		columnBA = columnBA + 1 and columnRA = columnRA - 1 if (BA.Action = right and !(columnBA = 2) and !(columnBA = 0 and (rowBA = 1 or rowBA = 2)) and RA.Action = left and !(columnRA = 0) and !(columnRA = 2 and (rowRA = 2 or rowRA = 3))); 
+		columnBA = columnBA + 1 and treasureMined = true if (BA.Action = right and !(columnBA = 2) and !(columnBA = 0 and (rowBA = 1 or rowBA = 2)) and RA.Action = mine and (columnRA = 2 and rowRA = 3)); 
 		
 		--BA goes left		
-		columnBA = columnBA - 1 and rowRA = rowRA + 1 if (BA.Action = left and !(columnBA = 0) and RA.Action = down and !(rowRA = 3));
-		columnBA = columnBA - 1 and rowRA = rowRA - 1 if (BA.Action = left and !(columnBA = 0) and RA.Action = up and !(rowRA = 0));
-		columnBA = columnBA - 1 and columnRA = columnRA + 1 if (BA.Action = left and !(columnBA = 0) and RA.Action = right and !(columnRA = 2));
-		columnBA = columnBA - 1 and columnRA = columnRA - 1 if (BA.Action = left and !(columnBA = 0) and RA.Action = left and !(columnRA = 0));
-		columnBA = columnBA - 1 and treasureMined = true if (BA.Action = left and !(columnBA = 0) and RA.Action = mine and (columnRA = 2 and rowRA = 3)); 
+		columnBA = columnBA - 1 and rowRA = rowRA + 1 if (BA.Action = left and !(columnBA = 0) and !(columnBA = 2 and (rowBA = 2 or rowBA = 3)) and RA.Action = down and !(rowRA = 3) and !(rowRA = 0 and columnRA = 1));
+		columnBA = columnBA - 1 and rowRA = rowRA - 1 if (BA.Action = left and !(columnBA = 0) and !(columnBA = 2 and (rowBA = 2 or rowBA = 3)) and RA.Action = up and !(rowRA = 0) and !(rowRA = 3 and columnRA = 1));
+		columnBA = columnBA - 1 and columnRA = columnRA + 1 if (BA.Action = left and !(columnBA = 0) and !(columnBA = 2 and (rowBA = 2 or rowBA = 3)) and RA.Action = right and !(columnRA = 2) and !(columnRA = 0 and (rowRA = 1 or rowRA = 2)));
+		columnBA = columnBA - 1 and columnRA = columnRA - 1 if (BA.Action = left and !(columnBA = 0) and !(columnBA = 2 and (rowBA = 2 or rowBA = 3)) and RA.Action = left and !(columnRA = 0) and !(columnRA = 2 and (rowRA = 2 or rowRA = 3)));
+		columnBA = columnBA - 1 and treasureMined = true if (BA.Action = left and !(columnBA = 0) and !(columnBA = 2 and (rowBA = 2 or rowBA = 3)) and RA.Action = mine and (columnRA = 2 and rowRA = 3)); 
 		
 		--BA mines treasure
-		treasureMined = true and rowRA = rowRA + 1 if (BA.Action = mine and (columnBA = 2 and rowBA = 3) and RA.Action = down and !(rowRA = 3));
-		treasureMined = true and rowRA = rowRA - 1 if (BA.Action = mine and (columnBA = 2 and rowBA = 3) and RA.Action = up and !(rowRA = 0));
-		treasureMined = true and columnRA = columnRA + 1 if (BA.Action = mine and (columnBA = 2 and rowBA = 3) and RA.Action = right and !(columnRA = 2));
-		treasureMined = true and columnRA = columnRA - 1 if (BA.Action = mine and (columnBA = 2 and rowBA = 3) and RA.Action = left and !(columnRA = 0));
+		treasureMined = true and rowRA = rowRA + 1 if (BA.Action = mine and (columnBA = 2 and rowBA = 3) and RA.Action = down and !(rowRA = 3) and !(rowRA = 0 and columnRA = 1));
+		treasureMined = true and rowRA = rowRA - 1 if (BA.Action = mine and (columnBA = 2 and rowBA = 3) and RA.Action = up and !(rowRA = 0) and !(rowRA = 3 and columnRA = 1));
+		treasureMined = true and columnRA = columnRA + 1 if (BA.Action = mine and (columnBA = 2 and rowBA = 3) and RA.Action = right and !(columnRA = 2) and !(columnRA = 0 and (rowRA = 1 or rowRA = 2)));
+		treasureMined = true and columnRA = columnRA - 1 if (BA.Action = mine and (columnBA = 2 and rowBA = 3) and RA.Action = left and !(columnRA = 0) and !(columnRA = 2 and (rowRA = 2 or rowRA = 3)));
 		treasureMined = true if (BA.Action = mine and (columnBA = 2 and rowBA = 3) and RA.Action = mine and (columnRA = 2 and rowRA = 3)); 
 		
 		
 		--Only BA does variable-changing actions
 		--BA goes down
-		rowBA = rowBA + 1 if (BA.Action = down and !(rowBA = 3) and RA.Action = down and (rowRA = 3));
-		rowBA = rowBA + 1  if (BA.Action = down and !(rowBA = 3) and RA.Action = up and (rowRA = 0));
-		rowBA = rowBA + 1 if (BA.Action = down and !(rowBA = 3) and RA.Action = right and (columnRA = 2));
-		rowBA = rowBA + 1  if (BA.Action = down and !(rowBA = 3) and RA.Action = left and (columnRA = 0));
-		rowBA = rowBA + 1 if (BA.Action = down and !(rowBA = 3) and RA.Action = mine and !(columnRA = 2 and rowRA = 3));
+		rowBA = rowBA + 1 if (BA.Action = down and !(rowBA = 3) and !(rowBA = 0 and columnBA = 1) and RA.Action = down and ((rowRA = 3) or (rowRA = 0 and columnRA = 1)));
+		rowBA = rowBA + 1  if (BA.Action = down and !(rowBA = 3) and !(rowBA = 0 and columnBA = 1) and RA.Action = up and ((rowRA = 0) or (rowRA = 3 and columnRA = 1)));
+		rowBA = rowBA + 1 if (BA.Action = down and !(rowBA = 3) and !(rowBA = 0 and columnBA = 1) and RA.Action = right and ((columnRA = 2) or (columnRA = 0 and (rowRA = 1 or rowRA = 2))) );
+		rowBA = rowBA + 1  if (BA.Action = down and !(rowBA = 3) and !(rowBA = 0 and columnBA = 1) and RA.Action = left and ((columnRA = 0) or (columnRA = 2 and (rowRA = 2 or rowRA = 3))) );
+		rowBA = rowBA + 1 if (BA.Action = down and !(rowBA = 3) and !(rowBA = 0 and columnBA = 1)  and RA.Action = mine and !(columnRA = 2 and rowRA = 3));
 		
 		--BA goes up
-		rowBA = rowBA - 1 if (BA.Action = up and !(rowBA = 0) and RA.Action = down and (rowRA = 3));
-		rowBA = rowBA - 1  if (BA.Action = up and !(rowBA = 0) and RA.Action = up and (rowRA = 0));
-		rowBA = rowBA - 1 if (BA.Action = up and !(rowBA = 0) and RA.Action = right and (columnRA = 2));
-		rowBA = rowBA - 1 if (BA.Action = up and !(rowBA = 0) and RA.Action = left and (columnRA = 0));
-		rowBA = rowBA - 1 if (BA.Action = up and !(rowBA = 0) and RA.Action = mine and !(columnRA = 2 and rowRA = 3));
+		rowBA = rowBA - 1 if (BA.Action = up and !(rowBA = 0) and !(rowBA = 3 and columnBA = 1) and RA.Action = down and ((rowRA = 3) or (rowRA = 0 and columnRA = 1)));
+		rowBA = rowBA - 1  if (BA.Action = up and !(rowBA = 0) and !(rowBA = 3 and columnBA = 1) and RA.Action = up and ((rowRA = 0) or (rowRA = 3 and columnRA = 1)));
+		rowBA = rowBA - 1 if (BA.Action = up and !(rowBA = 0) and !(rowBA = 3 and columnBA = 1) and RA.Action = right and ((columnRA = 2) or (columnRA = 0 and (rowRA = 1 or rowRA = 2))) );
+		rowBA = rowBA - 1 if (BA.Action = up and !(rowBA = 0) and !(rowBA = 3 and columnBA = 1) and RA.Action = left and ((columnRA = 0) or (columnRA = 2 and (rowRA = 2 or rowRA = 3))) );
+		rowBA = rowBA - 1 if (BA.Action = up and !(rowBA = 0) and !(rowBA = 3 and columnBA = 1) and RA.Action = mine and !(columnRA = 2 and rowRA = 3));
 		
 		--BA goes right		
-		columnBA = columnBA + 1  if (BA.Action = right and !(columnBA = 2) and RA.Action = down and (rowRA = 3)); 
-		columnBA = columnBA + 1  if (BA.Action = right and !(columnBA = 2) and RA.Action = up and (rowRA = 0)); 
-		columnBA = columnBA + 1  if (BA.Action = right and !(columnBA = 2) and RA.Action = right and (columnRA = 2)); 
-		columnBA = columnBA + 1  if (BA.Action = right and !(columnBA = 2) and RA.Action = left and (columnRA = 0)); 
-		columnBA = columnBA + 1  if (BA.Action = right and !(columnBA = 2) and RA.Action = mine and !(columnRA = 2 and rowRA = 3)); 
+		columnBA = columnBA + 1  if (BA.Action = right and !(columnBA = 2) and !(columnBA = 0 and (rowBA = 1 or rowBA = 2)) and RA.Action = down and ((rowRA = 3) or (rowRA = 0 and columnRA = 1))); 
+		columnBA = columnBA + 1  if (BA.Action = right and !(columnBA = 2) and !(columnBA = 0 and (rowBA = 1 or rowBA = 2)) and RA.Action = up and ((rowRA = 0) or (rowRA = 3 and columnRA = 1))); 
+		columnBA = columnBA + 1  if (BA.Action = right and !(columnBA = 2) and !(columnBA = 0 and (rowBA = 1 or rowBA = 2)) and RA.Action = right and ((columnRA = 2) or (columnRA = 0 and (rowRA = 1 or rowRA = 2))) ); 
+		columnBA = columnBA + 1  if (BA.Action = right and !(columnBA = 2) and !(columnBA = 0 and (rowBA = 1 or rowBA = 2)) and RA.Action = left and ((columnRA = 0) or (columnRA = 2 and (rowRA = 2 or rowRA = 3))) ); 
+		columnBA = columnBA + 1  if (BA.Action = right and !(columnBA = 2) and !(columnBA = 0 and (rowBA = 1 or rowBA = 2)) and RA.Action = mine and !(columnRA = 2 and rowRA = 3)); 
 		
 		--BA goes left		
-		columnBA = columnBA - 1  if (BA.Action = left and !(columnBA = 0) and RA.Action = down and (rowRA = 3));
-		columnBA = columnBA - 1 if (BA.Action = left and !(columnBA = 0) and RA.Action = up and (rowRA = 0));
-		columnBA = columnBA - 1 if (BA.Action = left and !(columnBA = 0) and RA.Action = right and (columnRA = 2));
-		columnBA = columnBA - 1 if (BA.Action = left and !(columnBA = 0) and RA.Action = left and (columnRA = 0));
-		columnBA = columnBA - 1 if (BA.Action = left and !(columnBA = 0) and RA.Action = mine and !(columnRA = 2 and rowRA = 3)); 
+		columnBA = columnBA - 1  if (BA.Action = left and !(columnBA = 0) and !(columnBA = 2 and (rowBA = 2 or rowBA = 3)) and RA.Action = down and ((rowRA = 3) or (rowRA = 0 and columnRA = 1)));
+		columnBA = columnBA - 1 if (BA.Action = left and !(columnBA = 0) and !(columnBA = 2 and (rowBA = 2 or rowBA = 3)) and RA.Action = up and ((rowRA = 0) or (rowRA = 3 and columnRA = 1)));
+		columnBA = columnBA - 1 if (BA.Action = left and !(columnBA = 0) and !(columnBA = 2 and (rowBA = 2 or rowBA = 3)) and RA.Action = right and ((columnRA = 2) or (columnRA = 0 and (rowRA = 1 or rowRA = 2))) );
+		columnBA = columnBA - 1 if (BA.Action = left and !(columnBA = 0) and !(columnBA = 2 and (rowBA = 2 or rowBA = 3)) and RA.Action = left and ((columnRA = 0) or (columnRA = 2 and (rowRA = 2 or rowRA = 3))) );
+		columnBA = columnBA - 1 if (BA.Action = left and !(columnBA = 0) and !(columnBA = 2 and (rowBA = 2 or rowBA = 3)) and RA.Action = mine and !(columnRA = 2 and rowRA = 3)); 
 		
 		--BA mines treasure
-		treasureMined = true  if (BA.Action = mine and (columnBA = 2 and rowBA = 3) and RA.Action = down and (rowRA = 3));
-		treasureMined = true  if (BA.Action = mine and (columnBA = 2 and rowBA = 3) and RA.Action = up and (rowRA = 0));
-		treasureMined = true if (BA.Action = mine and (columnBA = 2 and rowBA = 3) and RA.Action = right and (columnRA = 2));
-		treasureMined = true  if (BA.Action = mine and (columnBA = 2 and rowBA = 3) and RA.Action = left and (columnRA = 0));
+		treasureMined = true  if (BA.Action = mine and (columnBA = 2 and rowBA = 3) and RA.Action = down and ((rowRA = 3) or (rowRA = 0 and columnRA = 1)));
+		treasureMined = true  if (BA.Action = mine and (columnBA = 2 and rowBA = 3) and RA.Action = up and ((rowRA = 0) or (rowRA = 3 and columnRA = 1)));
+		treasureMined = true if (BA.Action = mine and (columnBA = 2 and rowBA = 3) and RA.Action = right and ((columnRA = 2) or (columnRA = 0 and (rowRA = 1 or rowRA = 2))) );
+		treasureMined = true  if (BA.Action = mine and (columnBA = 2 and rowBA = 3) and RA.Action = left and ((columnRA = 0) or (columnRA = 2 and (rowRA = 2 or rowRA = 3))) );
 		treasureMined = true if (BA.Action = mine and (columnBA = 2 and rowBA = 3) and RA.Action = mine and !(columnRA = 2 and rowRA = 3)); 
 		
 		--Only RA does Variable-changing actions
 		--RA goes down
-		rowRA = rowRA + 1 if (RA.Action = down and !(rowRA = 3) and BA.Action = down and (rowBA = 3));
-		rowRA = rowRA + 1  if (RA.Action = down and !(rowRA = 3) and BA.Action = up and (rowBA = 0));
-		rowRA = rowRA + 1 if (RA.Action = down and !(rowRA = 3) and BA.Action = right and (columnBA = 2));
-		rowRA = rowRA + 1  if (RA.Action = down and !(rowRA = 3) and BA.Action = left and (columnBA = 0));
-		rowRA = rowRA + 1 if (RA.Action = down and !(rowRA = 3) and BA.Action = mine and !(columnBA = 2 and rowBA = 3));
+		rowRA = rowRA + 1 if (RA.Action = down and !(rowRA = 3) and !(rowRA = 0 and columnRA = 1) and BA.Action = down and ((rowBA = 3) or (rowBA = 0 and columnBA = 1)));
+		rowRA = rowRA + 1  if (RA.Action = down and !(rowRA = 0 and columnRA = 1) and !(rowRA = 3) and BA.Action = up and ((rowBA = 0) or (rowBA = 3 and columnBA = 1)));
+		rowRA = rowRA + 1 if (RA.Action = down and !(rowRA = 0 and columnRA = 1) and !(rowRA = 3) and BA.Action = right and ((columnBA = 2) or (columnBA = 0 and (rowBA = 1 or rowBA = 2))) );
+		rowRA = rowRA + 1  if (RA.Action = down and !(rowRA = 0 and columnRA = 1) and !(rowRA = 3) and BA.Action = left and ((columnBA = 0) or (columnBA = 2 and (rowBA = 2 or rowBA = 3))) );
+		rowRA = rowRA + 1 if (RA.Action = down and !(rowRA = 0 and columnRA = 1) and !(rowRA = 3) and BA.Action = mine and !(columnBA = 2 and rowBA = 3));
 		
 		--RA goes up
-		rowRA = rowRA - 1 if (RA.Action = up and !(rowRA = 0) and BA.Action = down and (rowBA = 3));
-		rowRA = rowRA - 1  if (RA.Action = up and !(rowRA = 0) and BA.Action = up and (rowBA = 0));
-		rowRA = rowRA - 1 if (RA.Action = up and !(rowRA = 0) and BA.Action = right and (columnBA = 2));
-		rowRA = rowRA - 1 if (RA.Action = up and !(rowRA = 0) and BA.Action = left and (columnBA = 0));
-		rowRA = rowRA - 1 if (RA.Action = up and !(rowRA = 0) and BA.Action = mine and !(columnBA = 2 and rowBA = 3));
+		rowRA = rowRA - 1 if (RA.Action = up and !(rowRA = 0) and !(rowRA = 3 and columnRA = 1) and BA.Action = down and ((rowBA = 3) or (rowBA = 0 and columnBA = 1)));
+		rowRA = rowRA - 1  if (RA.Action = up and !(rowRA = 0) and !(rowRA = 3 and columnRA = 1) and BA.Action = up and ((rowBA = 0) or (rowBA = 3 and columnBA = 1)));
+		rowRA = rowRA - 1 if (RA.Action = up and !(rowRA = 0) and !(rowRA = 3 and columnRA = 1) and BA.Action = right and ((columnBA = 2) or (columnBA = 0 and (rowBA = 1 or rowBA = 2))));
+		rowRA = rowRA - 1 if (RA.Action = up and !(rowRA = 0) and !(rowRA = 3 and columnRA = 1) and BA.Action = left and ((columnBA = 0) or (columnBA = 2 and (rowBA = 2 or rowBA = 3))) );
+		rowRA = rowRA - 1 if (RA.Action = up and !(rowRA = 0) and !(rowRA = 3 and columnRA = 1) and BA.Action = mine and !(columnBA = 2 and rowBA = 3));
 		
 		--RA goes right		
-		columnRA = columnRA + 1  if (RA.Action = right and !(columnRA = 2) and BA.Action = down and (rowBA = 3)); 
-		columnRA = columnRA + 1  if (RA.Action = right and !(columnRA = 2) and BA.Action = up and (rowBA = 0)); 
-		columnRA = columnRA + 1  if (RA.Action = right and !(columnRA = 2) and BA.Action = right and (columnBA = 2)); 
-		columnRA = columnRA + 1  if (RA.Action = right and !(columnRA = 2) and BA.Action = left and (columnBA = 0)); 
-		columnRA = columnRA + 1  if (RA.Action = right and !(columnRA = 2) and BA.Action = mine and !(columnBA = 2 and rowBA = 3)); 
+		columnRA = columnRA + 1  if (RA.Action = right and !(columnRA = 2) and !(columnRA = 0 and (rowRA = 1 or rowRA = 2)) and BA.Action = down and ((rowBA = 3) or (rowBA = 0 and columnBA = 1)));
+		columnRA = columnRA + 1  if (RA.Action = right and !(columnRA = 2) and !(columnRA = 0 and (rowRA = 1 or rowRA = 2)) and BA.Action = up and ((rowBA = 0) or (rowBA = 3 and columnBA = 1))); 
+		columnRA = columnRA + 1  if (RA.Action = right and !(columnRA = 2) and !(columnRA = 0 and (rowRA = 1 or rowRA = 2)) and BA.Action = right and ((columnBA = 2) or (columnBA = 0 and (rowBA = 1 or rowBA = 2)))); 
+		columnRA = columnRA + 1  if (RA.Action = right and !(columnRA = 2) and !(columnRA = 0 and (rowRA = 1 or rowRA = 2)) and BA.Action = left and ((columnBA = 0) or (columnBA = 2 and (rowBA = 2 or rowBA = 3))) ); 
+		columnRA = columnRA + 1  if (RA.Action = right and !(columnRA = 2) and !(columnRA = 0 and (rowRA = 1 or rowRA = 2)) and BA.Action = mine and !(columnBA = 2 and rowBA = 3)); 
 		
 		--RA goes left		
-		columnRA = columnRA - 1  if (RA.Action = left and !(columnRA = 0) and BA.Action = down and (rowBA = 3));
-		columnRA = columnRA - 1 if (RA.Action = left and !(columnRA = 0) and BA.Action = up and (rowBA = 0));
-		columnRA = columnRA - 1 if (RA.Action = left and !(columnRA = 0) and BA.Action = right and (columnBA = 2));
-		columnRA = columnRA - 1 if (RA.Action = left and !(columnRA = 0) and BA.Action = left and (columnBA = 0));
-		columnRA = columnRA - 1 if (RA.Action = left and !(columnRA = 0) and BA.Action = mine and !(columnBA = 2 and rowBA = 3)); 
+		columnRA = columnRA - 1  if (RA.Action = left and !(columnRA = 0) and !(columnRA = 2 and (rowRA = 2 or rowRA = 3)) and BA.Action = down and ((rowBA = 3) or (rowBA = 0 and columnBA = 1)));
+		columnRA = columnRA - 1 if (RA.Action = left and !(columnRA = 0) and !(columnRA = 2 and (rowRA = 2 or rowRA = 3)) and BA.Action = up and ((rowBA = 0) or (rowBA = 3 and columnBA = 1)));
+		columnRA = columnRA - 1 if (RA.Action = left and !(columnRA = 0) and !(columnRA = 2 and (rowRA = 2 or rowRA = 3)) and BA.Action = right and ((columnBA = 2) or (columnBA = 0 and (rowBA = 1 or rowBA = 2))));
+		columnRA = columnRA - 1 if (RA.Action = left and !(columnRA = 0) and !(columnRA = 2 and (rowRA = 2 or rowRA = 3)) and BA.Action = left and ((columnBA = 0) or (columnBA = 2 and (rowBA = 2 or rowBA = 3))) );
+		columnRA = columnRA - 1 if (RA.Action = left and !(columnRA = 0) and !(columnRA = 2 and (rowRA = 2 or rowRA = 3)) and BA.Action = mine and !(columnBA = 2 and rowBA = 3)); 
 		
 		--RA mines treasure
-		treasureMined = true  if (RA.Action = mine and (columnRA = 2 and rowRA = 3) and BA.Action = down and (rowBA = 3));
-		treasureMined = true  if (RA.Action = mine and (columnRA = 2 and rowRA = 3) and BA.Action = up and (rowBA = 0));
-		treasureMined = true if (RA.Action = mine and (columnRA = 2 and rowRA = 3) and BA.Action = right and (columnBA = 2));
-		treasureMined = true  if (RA.Action = mine and (columnRA = 2 and rowRA = 3) and BA.Action = left and (columnBA = 0));
+		treasureMined = true  if (RA.Action = mine and (columnRA = 2 and rowRA = 3) and BA.Action = down and ((rowBA = 3) or (rowBA = 0 and columnBA = 1)));
+		treasureMined = true  if (RA.Action = mine and (columnRA = 2 and rowRA = 3) and BA.Action = up and ((rowBA = 0) or (rowBA = 3 and columnBA = 1)));
+		treasureMined = true if (RA.Action = mine and (columnRA = 2 and rowRA = 3) and BA.Action = right and ((columnBA = 2) or (columnBA = 0 and (rowBA = 1 or rowBA = 2))));
+		treasureMined = true  if (RA.Action = mine and (columnRA = 2 and rowRA = 3) and BA.Action = left and ((columnBA = 0) or (columnBA = 2 and (rowBA = 2 or rowBA = 3))) );
 		treasureMined = true if (RA.Action = mine and (columnRA = 2 and rowRA = 3) and BA.Action = mine and !(columnBA = 2 and rowBA = 3)); 
 		
 		
