@@ -222,22 +222,32 @@ def findStrategy( mcmasCopy, agentIndex, skipUniform ):
 
     return startegyExists, actionsPlan
 
-def writeJasonPlan( strategyActions, goal, knownVars, knownPossibleValue, unknownVars, unknownPossibleValue, agents, agentIndex, agentVariablePermutations, vars, newGoal):
+def writeJasonPlan( strategyActions, goal, knownVars, knownPossibleValue, unknownVars, unknownPossibleValue, fixedEnvVariable, agents, agentIndex, agentVariablePermutations, vars, newGoal):
     #currTime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     agentName = agents[agentIndex]
 
-    jasonFileName = agentName + ".as"
+    jasonFileName = agentName + ".asl"
 
     with open(jasonFileName, "a") as jasonFile:
         #Write goal
         jasonFile.write("+!" + convertGoalToJasonGoal(goal) + ":")
 
+        #Write fixed variables
+        for i in range(len(fixedEnvVariable)):
+            fixVarAndVal = fixedEnvVariable[i]
+            jasonFile.write("\n")
+            jasonFile.write("\t")
+            jasonFile.write(fixVarAndVal[0].lower() + "(" + str(fixVarAndVal[1]).replace(";", "") + ")")
+            if ( i < ( len(fixedEnvVariable) - 1 ) or len(knownVars) > 0 or len( unknownVars ) > 0 ): 
+                jasonFile.write(" &")
+
+
         #Write pre-conditions
         for  i in range( len(knownVars) ):
             jasonFile.write("\n")
             jasonFile.write("\t")
-            jasonFile.write(knownVars[i].lower() + "(" + str(knownPossibleValue[i]) + ")")
-            if ( len( agentVariablePermutations ) > 1 ): # at least two agents
+            jasonFile.write(knownVars[i].lower() + "(" + str(knownPossibleValue[i]).replace(";", "") + ")")
+            if ( i < ( len(knownVars) - 1 ) or len( unknownVars ) > 0 ): 
                 jasonFile.write(" &")
 
         for  i in range( len(unknownVars) ):
@@ -245,40 +255,39 @@ def writeJasonPlan( strategyActions, goal, knownVars, knownPossibleValue, unknow
                 possValue = unknownPossibleValue[i][j]
                 jasonFile.write("\n")
                 jasonFile.write("\t")
-                jasonFile.write("poss(" + unknownVars[i].lower() + "(" + str(possValue) + "))")
-                if ( len(agentVariablePermutations) != 1 ):
-                    jasonFile.write(" &")
-                elif ( (i < len(unknownVars) - 1 or j < len(unknownPossibleValue[i]) - 1) ):
+                jasonFile.write("poss(" + unknownVars[i].lower() + "(" + str(possValue).replace(";", "") + "))")
+                
+                if ( (i < len(unknownVars) - 1 or j < len(unknownPossibleValue[i]) - 1) ):
                     jasonFile.write(" &")
         
         # Include beliefs of variables that the agent believes other agents know / don't know
         # Reminder: 0 holds the variables for agentIndex (i.e., the agent of interest)
-        for  i in range( len(agentVariablePermutations) ):
-            if 0 == i:
-                indexForPerm = agentIndex
-            elif agentIndex == i:
-                indexForPerm = 0
-            else:
-                indexForPerm = i
-            if not ( i == agentIndex ):
-                otherAgentName = agents[i]
-                otherAgentKnownVars = agentVariablePermutations[indexForPerm]
-                otherAgentUnknownVars = [var for var in vars if var not in otherAgentKnownVars]
-                for j in range( len(otherAgentKnownVars) ):
-                    otherAgentKnownVar = otherAgentKnownVars[j]
-                    jasonFile.write("\n")
-                    jasonFile.write("\t")
-                    jasonFile.write("k(" + otherAgentName.lower() + "," + otherAgentKnownVar.lower() + ")")
-                    if ( len(otherAgentUnknownVars) > 0 or j < len(otherAgentKnownVars) - 1 ):
-                        jasonFile.write(" &")
+        # for  i in range( len(agentVariablePermutations) ):
+        #     if 0 == i:
+        #         indexForPerm = agentIndex
+        #     elif agentIndex == i:
+        #         indexForPerm = 0
+        #     else:
+        #         indexForPerm = i
+        #     if not ( i == agentIndex ):
+        #         otherAgentName = agents[i]
+        #         otherAgentKnownVars = agentVariablePermutations[indexForPerm]
+        #         otherAgentUnknownVars = [var for var in vars if var not in otherAgentKnownVars]
+        #         for j in range( len(otherAgentKnownVars) ):
+        #             otherAgentKnownVar = otherAgentKnownVars[j]
+        #             jasonFile.write("\n")
+        #             jasonFile.write("\t")
+        #             jasonFile.write("k(" + otherAgentName.lower() + "," + otherAgentKnownVar.lower() + ")")
+        #             if ( len(otherAgentUnknownVars) > 0 or j < len(otherAgentKnownVars) - 1 ):
+        #                 jasonFile.write(" &")
                 
-                for j in range( len(otherAgentUnknownVars) ):
-                    otherAgentUnknownVar = otherAgentUnknownVars[j]
-                    jasonFile.write("\n")
-                    jasonFile.write("\t")
-                    jasonFile.write("!k(" + otherAgentName.lower() + "," + otherAgentUnknownVar.lower() + ")")
-                    if ( j < len(otherAgentUnknownVars) - 1 ):
-                        jasonFile.write(" &")
+        #         for j in range( len(otherAgentUnknownVars) ):
+        #             otherAgentUnknownVar = otherAgentUnknownVars[j]
+        #             jasonFile.write("\n")
+        #             jasonFile.write("\t")
+        #             jasonFile.write("!k(" + otherAgentName.lower() + "," + otherAgentUnknownVar.lower() + ")")
+        #             if ( j < len(otherAgentUnknownVars) - 1 ):
+        #                 jasonFile.write(" &")
 
         jasonFile.write("\n\t<-")
 
@@ -302,18 +311,22 @@ def writeJasonPlan( strategyActions, goal, knownVars, knownPossibleValue, unknow
         
         jasonFile.write("\n\n")
 
-def createJasonPlan(vars, agents, agentIndex):
+def createJasonPlan(vars, fixedEnvVariable, agents, agentIndex):
     agentName = agents[agentIndex]
 
-    jasonFileName = agentName + ".as"
+    jasonFileName = agentName + ".asl"
 
     with open(jasonFileName, "w") as jasonFile:
         for var in vars:
             jasonFile.write(var.lower() + "(X).")
             jasonFile.write("\n")
+        
+        for fixVarAndVal in fixedEnvVariable:
+            jasonFile.write(fixVarAndVal[0].lower() + "(X).")
+            jasonFile.write("\n")
     
-        jasonFile.write("k(Y, X).")
-        jasonFile.write("\n")
+        # jasonFile.write("k(Y, X).")
+        # jasonFile.write("\n")
         jasonFile.write("\n")
 
 def convertGoalToJasonGoal(goal):
@@ -338,8 +351,8 @@ def setFixVariables(varsForAgent):
         fixEnvVariables = input("Which variables? (comma seperated): ")
         for fixedVar in fixEnvVariables.split(","):
             fixedVar = fixedVar.strip()
-            fixedEnvVariables.append(fixedVar)
             value = input("Value for Environment." + fixedVar + " ?: ")
+            fixedEnvVariables.append( (fixedVar, value.strip()) )
             fixedInitialState += " (" + "Environment" + "." + fixedVar + "=" + value.strip() + ") and "
 
     return fixedInitialState, fixedEnvVariables
@@ -477,35 +490,35 @@ def parseMCMASFile(mcmasRaw):
 
     return varsAndValues, agents, varsForAgent, goals
 
-def generatePlans(varsAndValues, agents, goals, mcmasRaw, fixedInitialState, agentIndex, goalAfterGoals, skipUniform):
+def generatePlans(varsAndValues, agents, goals, mcmasRaw, fixedInitialState, agentIndex, goalAfterGoals, skipUniform, fixedEnvVariable):
     plans = list()
     idealPlans = dict() # Holds ideal plans given the variables other agents know
     numAgents = len(agents)
-    numPermutations = numAgents 
+    numPermutations = 1 #can be numAgents if actions change based on actually knowing certain values from the environment
     vars = list(varsAndValues.keys())
     vars.sort()
     
     powersetVars = powerset(vars) 
     allAgentVariablePermutations = list(product(powersetVars, repeat=numPermutations)) 
 
-    createJasonPlan(vars, agents, agentIndex)
+    createJasonPlan(vars, fixedEnvVariable, agents, agentIndex)
 
     for goalIndex in range(len(goals)):
         goal = goals[goalIndex]
         for agentVariablePermutations in allAgentVariablePermutations:
             mcmasCopy = str(mcmasRaw) #Make a copy of raw text (we modify this copy)
 
-            for i in range(numPermutations):
-                if 0 == i:
-                    indexForPerm = agentIndex
-                elif agentIndex == i:
-                    indexForPerm = 0
-                else:
-                    indexForPerm = i
+            # for i in range(numPermutations):
+            #     if 0 == i:
+            #         indexForPerm = agentIndex
+            #     elif agentIndex == i:
+            #         indexForPerm = 0
+            #     else:
+            #         indexForPerm = i
 
-                agentVariables = agentVariablePermutations[indexForPerm]
+            #     agentVariables = agentVariablePermutations[indexForPerm]
                
-                mcmasCopy = setLobsvarForAgent( agents[i], agentVariables, mcmasCopy )
+            #     mcmasCopy = setLobsvarForAgent( agents[i], agentVariables, mcmasCopy )
 
             knownVars = list(agentVariablePermutations[0]) # 0 holds variables for the agent (i.e., at agentIndex in the agents list)
             unknownVars = [var for var in vars if var not in knownVars]
@@ -544,12 +557,7 @@ def generatePlans(varsAndValues, agents, goals, mcmasRaw, fixedInitialState, age
                         #if complete certainty and goal true, add to idea plans list (complete knowledge strategies)
                         if completeCertainty:
                             if strategyExists:
-                                #Reminder, other agents' known variables are stored in elements 1 + of agentVariablePermutations
-                                otherAgentKnowledge = tuple(agentVariablePermutations[1:])
-                                if otherAgentKnowledge not in idealPlans:
-                                    idealPlans[otherAgentKnowledge] = dict()
-
-                                idealPlans[ otherAgentKnowledge ][ tuple(knownPossibleValue) ] = strategyActions
+                                idealPlans[ tuple(knownPossibleValue) ] = strategyActions
                             else:
                                 print("random action") #FIXME: no random action, nothing to do except have new goal
                         #if partial certainty and goal false, loop uncertainty with goodie list until strat. 
@@ -573,22 +581,18 @@ def generatePlans(varsAndValues, agents, goals, mcmasRaw, fixedInitialState, age
                                             unknownVarIndex += 1
 
                                     actualDictKey = tuple(dictKey)
-                                    # Get ideal plans given what other agents knew about environment
-                                    # It maybe be there for a given knowledge of other agents, no ideal plan was ever found
-                                    otherAgentKnowledge = tuple(agentVariablePermutations[1:])
-                                    if otherAgentKnowledge in idealPlans:
-                                        applicablePlans = idealPlans[ otherAgentKnowledge ]
-                                        if actualDictKey in applicablePlans:
-                                            strategyActions = applicablePlans[actualDictKey]
-                                            strategyExists = True
-                                            break #we found a plan, so stop
+                                    
+                                    if actualDictKey in idealPlans:
+                                        strategyActions = idealPlans[actualDictKey]
+                                        strategyExists = True
+                                        break #we found a plan, so stop
 
                         #if we could not find actions to do, means we cannot achieve this goal no matter what we do (no chance of getting goal)            
                         if not strategyExists:
                             print("out of luck")
 
                         #Write Jason Plan
-                        writeJasonPlan( strategyActions, goal, knownVars, knownPossibleValue, unknownVars, unknownPossibleValue, agents, agentIndex, agentVariablePermutations, vars, goalAfterGoals[goalIndex])
+                        writeJasonPlan( strategyActions, goal, knownVars, knownPossibleValue, unknownVars, unknownPossibleValue, fixedEnvVariable, agents, agentIndex, agentVariablePermutations, vars, goalAfterGoals[goalIndex])
                 
             #break # to remove
 
@@ -597,7 +601,6 @@ def generatePlans(varsAndValues, agents, goals, mcmasRaw, fixedInitialState, age
     return None
 
 def main():
-    #FIXME: put fixed environment avriables in AS outout (e.g., treasureMined(false)). This is in Lobvar on main agent. This variable flops between known and unknown for opponent.
     #FIXME: goal names should be set to more simple strings
     Tk().withdraw()
     filePath = askopenfilename() 
@@ -611,7 +614,7 @@ def main():
 
     # Remove fixed environment variables from varsAndValues
     for fixedEnvVariable in fixedEnvVariables:
-        varsAndValues.pop(fixedEnvVariable)
+        varsAndValues.pop(fixedEnvVariable[0])
 
     goalAfterGoals = setGoalsAfterGoals(goals)
 
@@ -619,7 +622,7 @@ def main():
 
     skipUniform = getUniformShouldBeSkipped()
 
-    plans = generatePlans(varsAndValues, agents, goals, mcmasRaw, fixedInitialState, agentIndex, goalAfterGoals, skipUniform)
+    plans = generatePlans(varsAndValues, agents, goals, mcmasRaw, fixedInitialState, agentIndex, goalAfterGoals, skipUniform, fixedEnvVariables)
 
 #################################
 ##         End Functions       ##

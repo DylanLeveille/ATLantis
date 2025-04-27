@@ -1,0 +1,71 @@
+Agent Environment
+    Vars:
+    	rowA : 0..3;
+    	columnA : 0..2;
+    	rowB : 0..3;
+    	columnB : 0..2;
+    	treasureMined: boolean; -- only true if 3,2 and mined action from both agents
+    end Vars
+    Actions = { none };
+    Protocol:
+    	Other : {none};
+    end Protocol
+    Evolution:
+    		--Both Agents do variable-changing actions
+    		--Agent A goes down
+		
+    end Evolution
+end Agent
+
+Agent As
+    Lobsvars={};
+    Vars:
+	mined: boolean;
+    end Vars
+    Actions = {right, left, up, down, mine};
+    Protocol:
+    	Other : {right, left, up, down, mine};
+    end Protocol
+    Evolution:
+    	mined = true if A.Action = mine;
+    end Evolution
+end Agent
+
+Agent B
+    Lobsvars={};
+    Vars:
+	mined: boolean;
+    end Vars
+    Actions = {right, left, up, down, mine};
+    Protocol:
+    	Other : {right, left, up, down, mine};
+    end Protocol
+    Evolution:
+    	mined = true if B.Action = mine;
+    end Evolution
+end Agent
+
+Evaluation
+	ATreasure if  Environment.rowA=3 and  Environment.columnA=2;
+	BTreasure if  Environment.rowB=3 and  Environment.columnB=2;
+	BMined if  B.mined = true;
+	AMined if  A.mined = true;
+	treasureTaken if Environment.treasureMined = true; 
+end Evaluation
+
+InitStates
+          ( Environment.rowA=0 and Environment.columnA=0 
+          and Environment.rowB=0  and  Environment.columnB=1 
+          and A.mined=false and B.mined=false and Environment.treasureMined=false );
+end InitStates
+
+Groups
+	g1 = {A,B};
+end Groups
+
+Fairness
+end Fairness
+
+Formulae
+	<g1>  F( ATreasure and BTreasure and treasureTaken );
+end Formulae
