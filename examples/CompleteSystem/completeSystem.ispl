@@ -162,8 +162,7 @@ Evaluation
 end Evaluation
 
 InitStates
-          ( Environment.rowBA=0 and Environment.columnBA=0 
-          and Environment.rowRA=1  and  Environment.columnRA=0 
+          ( ((Environment.rowBA=0 and Environment.columnBA=0) or (Environment.columnBA=1 and Environment.rowBA=3)) and Environment.rowRA=1  and  Environment.columnRA=2 
           and BA.mined=false and RA.mined=false and Environment.treasureMined=false );
 end InitStates
 
